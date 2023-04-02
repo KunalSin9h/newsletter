@@ -1,0 +1,19 @@
+name: Security Audit
+run-name: "Security Audit for : ${{ github.event.pull_request.title }}"
+
+on: 
+  push:
+    paths:
+      - '**/Cargo.toml'
+      - '**/Cargo.lock'
+  schedule:
+    - cron: 0 0 * * *    # Evey day at 12:00 AM
+
+jobs:
+  security_audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: taiki-e/install-action@cargo-deny
+      - name: Scan for vulnerabilities
+        run: cargo deny check advisories 
