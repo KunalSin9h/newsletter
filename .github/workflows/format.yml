@@ -1,4 +1,4 @@
-name: Tests
+name: Format
 
 on: 
   push:
@@ -9,13 +9,12 @@ on:
       - "**"
 
 jobs:
-  test:
+  format:
     runs-on: ubuntu-22.04
     steps:
-      - name: Setup 
+      - name: Setup
         if: github.ref != 'refs/heads/master'
         uses: actions/checkout@v3
-      - name: Run Test
+      - name: Run Format
         if: github.ref != 'refs/heads/master'
-        run: cargo test
-
+        run: cargo fmt -- -check

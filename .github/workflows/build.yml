@@ -1,4 +1,4 @@
-name: Tests
+name: Build
 
 on: 
   push:
@@ -9,13 +9,13 @@ on:
       - "**"
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-22.04
     steps:
       - name: Setup 
         if: github.ref != 'refs/heads/master'
         uses: actions/checkout@v3
-      - name: Run Test
+      - name: Run Build
         if: github.ref != 'refs/heads/master'
-        run: cargo test
+        run: cargo build
 

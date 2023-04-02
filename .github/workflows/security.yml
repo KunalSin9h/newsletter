@@ -1,4 +1,4 @@
-name: Tests
+name: Security Vulnerability
 
 on: 
   push:
@@ -9,13 +9,13 @@ on:
       - "**"
 
 jobs:
-  test:
+  audit:
     runs-on: ubuntu-22.04
     steps:
-      - name: Setup 
+      - name: Setup
         if: github.ref != 'refs/heads/master'
         uses: actions/checkout@v3
-      - name: Run Test
+        run: cargo install cargo-audit
+      - name: Run security check
         if: github.ref != 'refs/heads/master'
-        run: cargo test
-
+        run: cargo audit
