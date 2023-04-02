@@ -1,4 +1,5 @@
 name: Tests
+run-name: "Testing @ ${{ github.event.pull_request.title }}"
 
 on: 
   push:

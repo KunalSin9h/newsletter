@@ -1,4 +1,5 @@
 name: Code Coverage
+run-name: "Code Coverage @ ${{ github.event.pull_request.title }}"
 
 on: 
   push:
