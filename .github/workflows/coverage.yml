@@ -12,9 +12,10 @@ jobs:
   coverage:
     runs-on: ubuntu-22.04
     steps:
-      - name: Setup
+      - name: Setup Repository
         if: github.ref != 'refs/heads/master'
         uses: actions/checkout@v3
+      - name: Install Tarpaulin
         run: cargo install cargo-tarpaulin
       - name: Run code coverage
         if: github.ref != 'refs/heads/master'

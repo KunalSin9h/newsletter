@@ -15,6 +15,7 @@ jobs:
       - name: Setup
         if: github.ref != 'refs/heads/master'
         uses: actions/checkout@v3
+      - name: Install cargo audit
         run: cargo install cargo-audit
       - name: Run security check
         if: github.ref != 'refs/heads/master'
