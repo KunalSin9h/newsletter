@@ -1,5 +1,5 @@
 name: CI
-run-name: "CI for : ${{ github.event.pull_request.title }}"
+run-name: "CI: ${{ github.event.pull_request.title || github.event.push.title }}"
 
 on: [push, pull_request]
 
@@ -8,28 +8,29 @@ env:
 
 jobs:
   test:
-    name: Test
+    name: Test run with cargo test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - name: Run tests
+      - name: cargo test
         run: cargo test
 
-  fmt:
-    name: Rustfmt
+  format:
+    name: Formatting check with rustfmt
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
-      - name: Enforce formatting
-        run: cargo fmt --check
+      - uses: Swatinem/rust-cache@v2
+      - name: cargo fmt -- --check
+        run: cargo fmt -- --check
 
-  clippy:
-    name: Clippy
+  lint:
+    name: Linting check with clippy
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -37,11 +38,11 @@ jobs:
         with:
           components: clippy
       - uses: Swatinem/rust-cache@v2
-      - name: Linting
+      - name: cargo clippy -- -D warnings
         run: cargo clippy -- -D warnings
 
   coverage:
-    name: Code coverage
+    name: Code coverage check with cargo-tarpaulin
     runs-on: ubuntu-latest
     container:
       image: xd009642/tarpaulin
@@ -49,5 +50,4 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Generate code coverage
-        run: |
-          cargo tarpaulin --verbose --workspace
+        run: cargo tarpaulin --verbose --workspace
