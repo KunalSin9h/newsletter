@@ -1,5 +1,5 @@
 name: Security Audit
-run-name: "Security Audit: ${{ github.event.pull_request.title || github.event.push.title }}"
+run-name: "Security Audit: ${{ github.event.pull_request.title || 'on master' }}"
 
 on:
   push:
