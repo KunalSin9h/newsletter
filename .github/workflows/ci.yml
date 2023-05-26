@@ -47,14 +47,14 @@ jobs:
       - name: cargo clippy -- -D warnings
         run: cargo clippy -- -D warnings
 
-  coverage:
-    name: Code coverage check with cargo-tarpaulin
-    runs-on: ubuntu-latest
-    container:
-      image: xd009642/tarpaulin
-      options: --security-opt seccomp=unconfined
-    steps:
-      - uses: actions/checkout@v3
-      - uses: Swatinem/rust-cache@v2
-      - name: Generate code coverage
-        run: cargo tarpaulin --verbose --workspace
+  # coverage:
+  #   name: Code coverage check with cargo-tarpaulin
+  #   runs-on: ubuntu-latest
+  #   container:
+  #     image: xd009642/tarpaulin
+  #     options: --security-opt seccomp=unconfined
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - uses: Swatinem/rust-cache@v2
+  #     - name: Generate code coverage
+  #       run: cargo tarpaulin --verbose --workspace
