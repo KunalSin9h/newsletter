@@ -1,7 +1,13 @@
 name: CI
 run-name: "CI: ${{ github.event.pull_request.title || 'on master' }}"
 
-on: [push, pull_request]
+on: 
+  push:
+    branches: [master]
+  pull_request:
+    branches: 
+      - '**'
+
 
 env:
   CARGO_TERM_COLOR: always
