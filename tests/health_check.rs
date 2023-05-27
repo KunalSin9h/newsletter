@@ -1,7 +1,5 @@
 use std::net::TcpListener;
 
-/// Spin up an instance of our application
-/// and returns its address (i.e. http://localhost:XXXX)
 fn spawn_app() -> String {
     let lst = TcpListener::bind("127.0.0.1:0").expect("Failed to bind random post for testing");
     let port = lst.local_addr().unwrap().port();
