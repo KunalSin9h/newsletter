@@ -2,6 +2,8 @@ name: CI
 run-name: "CI: ${{ github.event.pull_request.title || 'on master' }}"
 
 on: 
+  push: 
+    branches: [master]
   pull_request:
     branches: 
       - '**'
