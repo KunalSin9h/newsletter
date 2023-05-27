@@ -5,13 +5,13 @@ use std::net::TcpListener;
 // GET /health_check
 // Health Check is an basic endpoint for check the status of the server
 async fn health_check() -> HttpResponse {
-    return HttpResponse::Ok().finish();
+   HttpResponse::Ok().finish()
 }
 
 // POST /subscribe
 // Subscribe to email newsletter
 async fn subscribe() -> HttpResponse {
-    return HttpResponse::Ok().finish();
+    HttpResponse::Ok().finish()
 }
 
 pub fn run(listener: TcpListener) -> Result<Server, std::io::Error> {
@@ -23,5 +23,5 @@ pub fn run(listener: TcpListener) -> Result<Server, std::io::Error> {
     .listen(listener)?
     .run();
 
-    return Ok(server);
+    Ok(server)
 }

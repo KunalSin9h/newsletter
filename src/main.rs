@@ -15,5 +15,5 @@ async fn main() -> std::io::Result<()> {
     port = lst.local_addr().unwrap().port().to_string();
 
     println!("Started server at post {}", port);
-    return run(lst)?.await;
+    run(lst)?.await
 }

@@ -8,7 +8,7 @@ fn spawn_app() -> String {
     let server = newsletter::run(lst).expect("Failed to bind address");
     let _ = tokio::spawn(server);
 
-    return format!("http://127.0.0.1:{}", port);
+    format!("http://127.0.0.1:{}", port)
 }
 
 #[tokio::test]
