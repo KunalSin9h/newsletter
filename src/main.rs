@@ -9,7 +9,7 @@ async fn main() -> std::io::Result<()> {
 
     // A tcp listener for listening on port
     let lst = TcpListener::bind(format!("127.0.0.1:{}", port))
-        .expect(&format!("Failed to create TCP Listener at port :{}", port));
+        .unwrap_or_else(|_| panic!("Failed to create TCP Listener at port: {}", port));
 
     // Get random port if any
     port = lst.local_addr().unwrap().port().to_string();

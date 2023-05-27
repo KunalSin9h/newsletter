@@ -23,5 +23,5 @@ pub fn run(listener: TcpListener) -> Result<Server, std::io::Error> {
     .listen(listener)?
     .run();
 
-    return Ok(server);
+    Ok(server)
 }
