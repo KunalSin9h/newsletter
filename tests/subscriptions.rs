@@ -1,8 +1,17 @@
+use newsletter::configuration;
 use newsletter::startup::spawn_app;
+use sqlx::{Connection, PgConnection};
 
 #[tokio::test]
 async fn subscribe_return_a_200_for_valid_form_data() {
     let address = spawn_app();
+    let config = configuration::get_configuration().expect("Failed to read configuration");
+    let connection_string = config.database.connection_string();
+
+    let connection = PgConnection::connect(&connection_string)
+        .await
+        .expect("Failed to connect to postgres");
+
     let client = reqwest::Client::new();
 
     let body = "name=Kunal%20Singh&email=kunal%40gmail.com";
