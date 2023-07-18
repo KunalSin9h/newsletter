@@ -43,7 +43,7 @@ jobs:
       - name: Install postgresql-client
         run: sudo apt-get update && sudo apt-get install postgresql-client -y
       - name: Migrate database
-        run: SKIP_DOCKER=true ./scripts/init_db.sh
+        run: ./scripts/init_db.sh
       - name: Run Test
         run: cargo test
 
