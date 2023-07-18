@@ -8,8 +8,8 @@ pub struct Settings {
 pub struct DatabaseSettings {
     pub username: String,
     pub password: String,
-    pub port: u16,
     pub host: String,
+    pub port: u16,
     pub database_name: String,
 }
 
