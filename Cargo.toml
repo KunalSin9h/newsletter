@@ -10,6 +10,7 @@ reqwest = "0.11"
 serde = {version = "1", features = ["derive"]}
 config = "0.11"
 chrono = "0.4.26"
+time = "0.2.23"
 
 [dependencies.sqlx]
 version = "0.6.2"
@@ -30,3 +31,7 @@ features = [
     "fast-rng",          # Use a faster (but still sufficiently random) RNG
     "macro-diagnostics", # Enable better diagnostics for compile-time UUIDs
 ]
+
+
+[dev-dependencies]
+time = "0.2.23"
