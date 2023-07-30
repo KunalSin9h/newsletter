@@ -10,6 +10,10 @@ reqwest = "0.11"
 serde = {version = "1", features = ["derive"]}
 config = "0.11"
 chrono = { version = "0.4.26", default-features = false, features = ["clock"] }
+tracing = { version = "0.1", features = ["log"] }
+tracing-subscriber = { version = "0.3", features = ["registry", "env-filter"] }
+# registry implements the subscriber trait
+tracing-bunyan-formatter = "0.3"
 
 [dependencies.sqlx]
 version = "0.6.2"
