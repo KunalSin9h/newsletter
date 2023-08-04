@@ -11,7 +11,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  SQLX_VERSION: 0.6.2
+  SQLX_VERSION: 0.5.7
   SQLX_FEATURES: "rustls,postgres"
 
 jobs:
@@ -44,6 +44,9 @@ jobs:
         run: sudo apt-get update && sudo apt-get install postgresql-client -y
       - name: Migrate database
         run: ./scripts/init_db.sh
+      - name: Check sqlx-data.json is up-to-date
+        run: |
+          cargo sqlx prepare --check -- --bin newsletter
       - name: Run Test
         run: cargo test
 
