@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
-set -x
-set -eo pipefail
+set -eox pipefail
 
 # Check if the psql client is install on the system
 if ! [ -x "$(command -v psql)" ]; then
