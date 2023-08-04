@@ -47,7 +47,8 @@ pub fn get_configuration() -> Result<Settings, config::ConfigError> {
     // Initialize our configuration reader
     let mut settings = config::Config::default();
 
-    let base_path = std::env::current_dir().expect("Failed to determine the current working directory");
+    let base_path =
+        std::env::current_dir().expect("Failed to determine the current working directory");
     let configuration_directory = base_path.join("configuration");
 
     settings.merge(config::File::from(configuration_directory.join("base")).required(true))?;
@@ -60,7 +61,8 @@ pub fn get_configuration() -> Result<Settings, config::ConfigError> {
 
     // Looking for a top-level file with an extension
     // that `config` know how to parse: YAML, JSON, etc.
-    settings.merge(config::File::from(configuration_directory.join(env.as_str())).required(true))?;
+    settings
+        .merge(config::File::from(configuration_directory.join(env.as_str())).required(true))?;
 
     // convert the configuration values it read into settings type
     settings.try_into()
@@ -88,7 +90,10 @@ impl TryFrom<String> for Environment {
         match value.to_lowercase().as_str() {
             "local" => Ok(Environment::Local),
             "production" => Ok(Environment::Production),
-            other => Err(format!("{} is not supported environment. Use either `local` or `production`", other))
+            other => Err(format!(
+                "{} is not supported environment. Use either `local` or `production`",
+                other
+            )),
         }
     }
 }
