@@ -1,0 +1,26 @@
+name: CD
+run-name: "CD: ${{ github.event.pull_request.title || 'on master' }}"
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    name: "Build the docker image"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: build
+        run: docker build -t kunalsin9h/newsletter:latest .
+      - name: push to docker hub
+        if: github.ref == 'refs/heads/master'
+        run : |
+          echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u "kunalsin9h" --password-stdin
+          docker push kunalsin9h/newsletter:latest
+
+          docker tag kunalsin9h/newsletter:latest ghcr.io/kunalsin9h/newsletter:latest
+          echo "${{ secrets.GHCR }}" | docker login ghcr.io -u "kunalsin9h" --password-stdin
+          docker push ghcr.io/kunalsin9h/newsletter:latest
