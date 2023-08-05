@@ -1,18 +1,35 @@
 # Build Stage
-FROM rust:alpine AS builder
+FROM lukemathwalker/cargo-chef:latest-rust-slim-bullseye AS chef
 
-RUN apk update && apk add lld clang libressl-dev musl-dev
+RUN apt-get update && apt-get install libssl-dev pkg-config lld clang  -y
 
 WORKDIR /newsletter
 
+# Create a lock file for installing dependencies
+FROM chef AS planner
 COPY . .
+RUN cargo chef prepare --recipe-path recipe.json
 
+# Building stage
+FROM chef AS builder 
+COPY --from=planner /newsletter/recipe.json recipe.json
+# Build dependencies - this is the caching Docker layer!
+RUN cargo chef cook --release --recipe-path recipe.json
+
+
+COPY . .
 ENV SQLX_OFFLINE true
-
-RUN cargo build --release
+RUN cargo build --release --bin newsletter
 
 # Runtime Stage
-FROM alpine:latest
+FROM debian:bullseye-slim AS runtime
+
+RUN apt-get update -y \
+    && apt-get install -y --no-install-recommends openssl ca-certificates \
+    # Clean up
+    && apt-get autoremove -y \
+    && apt-get clean -y \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /newsletter
 
