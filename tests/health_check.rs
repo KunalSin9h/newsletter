@@ -44,10 +44,9 @@ pub async fn spawn_app() -> TestApp {
 
 pub async fn configure_database(config: &DatabaseSettings) -> PgPool {
     // Create the database
-    let mut connection =
-        PgConnection::connect_with(&config.without_db())
-            .await
-            .expect("Failed to connect to Postgres Database");
+    let mut connection = PgConnection::connect_with(&config.without_db())
+        .await
+        .expect("Failed to connect to Postgres Database");
 
     connection
         .execute(format!(r#"CREATE DATABASE "{}";"#, &config.database_name).as_str())
