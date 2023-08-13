@@ -1,4 +1,4 @@
-use secrecy::{Secret, ExposeSecret};
+use secrecy::{ExposeSecret, Secret};
 use serde_aux::field_attributes::deserialize_number_from_string;
 use sqlx::postgres::{PgConnectOptions, PgSslMode};
 use sqlx::ConnectOptions;
@@ -70,7 +70,6 @@ pub fn get_configuration() -> Result<Settings, config::ConfigError> {
     // that `config` know how to parse: YAML, JSON, etc.
     settings
         .merge(config::File::from(configuration_directory.join(env.as_str())).required(true))?;
-
 
     // APP_DATABASE__REQUIRED_SSL = Settings.database.require_ssl
     settings.merge(config::Environment::with_prefix("app").separator("__"))?;
