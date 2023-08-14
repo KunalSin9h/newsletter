@@ -1,0 +1,16 @@
+version: "3"
+
+services:
+  newsletter:
+    image: ghcr.io/kunalsin9h/newsletter:latest
+    ports:
+      - "5000:5000"
+    environment:
+      APP_APPLICATION__PORT: 5000
+      APP_APPLICATION__HOST: "0.0.0.0"
+      APP_DATABASE__REQUIRE_SSL: false
+      APP_DATABASE__DATABASE_NAME: newsletter
+      APP_DATABASE__USERNAME: "user"
+      APP_DATABASE__PASSWORD: "password"
+      APP_DATABASE__HOST: "host"
+      APP_DATABASE__PORT: 5432

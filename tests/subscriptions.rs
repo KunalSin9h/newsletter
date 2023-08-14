@@ -56,3 +56,32 @@ async fn subscribe_return_a_400_when_data_is_missing() {
         )
     }
 }
+
+#[tokio::test]
+async fn subscribe_return_a_200_when_fields_are_present_but_empty() {
+    let test_app = health_check::spawn_app().await;
+    let client = reqwest::Client::new();
+
+    let test_cases = vec![
+        ("name=&email=a%40b.com", "missing name value"),
+        ("name=a&email=", "missing email value"),
+        ("name=a&email=definitely_not_an_email", "missing email"),
+    ];
+
+    for (invalid_body, error_message) in test_cases {
+        let response = client
+            .post(&format!("{}/subscribe", &test_app.address))
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .body(invalid_body)
+            .send()
+            .await
+            .expect("Failed to execute request");
+
+        assert_eq!(
+            400,
+            response.status().as_u16(),
+            "the api didn't respond with 400 when the payload was {}",
+            error_message
+        )
+    }
+}
