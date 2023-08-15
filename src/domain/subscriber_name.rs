@@ -27,6 +27,14 @@ impl AsRef<str> for SubscriberName {
     }
 }
 
+impl TryFrom<String> for SubscriberName {
+    type Error = String;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Self::parse(value)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::SubscriberName;
