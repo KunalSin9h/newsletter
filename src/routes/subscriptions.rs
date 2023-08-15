@@ -2,12 +2,18 @@ use actix_web::{web, HttpResponse};
 use chrono::Utc;
 use sqlx::PgPool;
 
-use crate::domain::{NewSubscriber, SubscriberName};
+use crate::domain::NewSubscriber;
 
 #[derive(serde::Deserialize)]
 pub struct FormData {
     name: String,
     email: String,
+}
+
+pub fn parse_subscriber(form: FormData) -> Result<NewSubscriber, String> {
+    let name = form.name.try_into()?;
+    let email = form.email.try_into()?;
+    Ok(NewSubscriber { name, email })
 }
 
 // POST /subscribe
@@ -21,16 +27,9 @@ pub struct FormData {
     )
 )]
 pub async fn subscribe(form: web::Form<FormData>, db_pool: web::Data<PgPool>) -> HttpResponse {
-    let name = match SubscriberName::parse(form.0.name) {
-        Ok(name) => name,
+    let new_subscriber = match parse_subscriber(form.0) {
+        Ok(subscriber) => subscriber,
         Err(_) => return HttpResponse::BadRequest().finish(),
-    };
-
-    // `web::Form` is a wrapper around `FormData`
-    // `form.0` gives us access to the underlying `FormData`
-    let new_subscriber = NewSubscriber {
-        email: form.0.email,
-        name,
     };
 
     match insert_subscriber(&db_pool, &new_subscriber).await {
@@ -53,7 +52,7 @@ pub async fn insert_subscriber(
     VALUES ($1, $2, $3, $4)
     "#,
         sqlx::types::Uuid::new_v4(),
-        new_subscriber.email,
+        new_subscriber.email.as_ref(),
         new_subscriber.name.as_ref(),
         Utc::now()
     )

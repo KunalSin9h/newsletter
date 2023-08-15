@@ -20,6 +20,8 @@ tracing-actix-web = "0.5"
 serde-aux = "3"
 unicode-segmentation = "1"
 claim = "0.5"
+validator = "0.14"
+fake = "2.4"
 
 [dependencies.sqlx]
 version = "0.5.7"
