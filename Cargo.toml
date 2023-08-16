@@ -4,9 +4,9 @@ version = "0.0.0"
 edition = "2021"
 
 [dependencies]
-tokio = {version = "1", features = ["macros", "rt-multi-thread"]}
+tokio = {version = "1", features = ["macros", "rt-multi-thread", "rt"]}
 actix-web = "4"
-reqwest = "0.11"
+reqwest = {version = "0.11", default-features = false, features = ["json", "rustls-tls"]}
 serde = {version = "1", features = ["derive"]}
 config = "0.11"
 chrono = { version = "0.4.26", default-features = false, features = ["clock"] }
@@ -22,6 +22,7 @@ unicode-segmentation = "1"
 claim = "0.5"
 validator = "0.14"
 fake = "2.4"
+wiremock = "0.5"
 
 [dependencies.sqlx]
 version = "0.5.7"
