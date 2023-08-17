@@ -22,8 +22,12 @@ async fn main() -> std::io::Result<()> {
         .sender()
         .expect("Invalid sender email");
 
-    let email_client = EmailClient::new(configuration.email_client.base_url, sender)
-        .expect("Failed to parse email server url");
+    let email_client = EmailClient::new(
+        configuration.email_client.base_url,
+        sender,
+        configuration.email_client.authorization_token,
+    )
+    .expect("Failed to parse email server url");
 
     // A tcp listener for listening on port
     let lst = TcpListener::bind(format!(

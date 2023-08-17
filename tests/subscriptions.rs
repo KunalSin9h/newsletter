@@ -9,7 +9,7 @@ async fn subscribe_return_a_200_for_valid_form_data() {
     let body = "name=Kunal%20Singh&email=kunal%40gmail.com";
 
     let response = client
-        .post(format!("{}/subscribe", &test_app.address))
+        .post(format!("{}/subscription", &test_app.address))
         .header("Content-Type", "application/x-www-form-urlencoded")
         .body(body)
         .send()
@@ -41,7 +41,7 @@ async fn subscribe_return_a_400_when_data_is_missing() {
 
     for (invalid_body, error_message) in test_cases {
         let response = client
-            .post(format!("{}/subscribe", test_app.address))
+            .post(format!("{}/subscription", test_app.address))
             .header("Content-Type", "application/x-www-form-urlencoded")
             .body(invalid_body)
             .send()
@@ -70,7 +70,7 @@ async fn subscribe_return_a_200_when_fields_are_present_but_empty() {
 
     for (invalid_body, error_message) in test_cases {
         let response = client
-            .post(&format!("{}/subscribe", &test_app.address))
+            .post(&format!("{}/subscription", &test_app.address))
             .header("Content-Type", "application/x-www-form-urlencoded")
             .body(invalid_body)
             .send()

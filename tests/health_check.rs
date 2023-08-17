@@ -38,8 +38,12 @@ pub async fn spawn_app() -> TestApp {
         .sender()
         .expect("Invalid sender email");
 
-    let email_client = EmailClient::new(configuration.email_client.base_url, sender)
-        .expect("Failed to test, due to invalid email server url");
+    let email_client = EmailClient::new(
+        configuration.email_client.base_url,
+        sender,
+        configuration.email_client.authorization_token,
+    )
+    .expect("Failed to test, due to invalid email server url");
 
     let server = run(lst, connection_pool.clone(), email_client).expect("Failed to bind address");
 

@@ -2,3 +2,7 @@ application:
   host: "127.0.0.1"
 database:
   require_ssl: false
+email_client:
+  base_url: "http://domain.com/"
+  sender_email: "test@email.com"
+  authorization_token: "token"
