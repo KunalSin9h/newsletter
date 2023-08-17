@@ -26,16 +26,14 @@ impl EmailClient {
         base_url: String,
         sender: SubscriberEmail,
         authorization_token: Secret<String>,
+        timeout: std::time::Duration,
     ) -> Result<Self, String> {
         let base_url = match reqwest::Url::parse(&base_url) {
             Ok(url) => url,
             Err(err) => return Err(err.to_string()),
         };
 
-        let http_client = Client::builder()
-            .timeout(std::time::Duration::from_secs(10))
-            .build()
-            .unwrap();
+        let http_client = Client::builder().timeout(timeout).build().unwrap();
 
         Ok(Self {
             http_client,
@@ -110,12 +108,31 @@ mod tests {
         }
     }
 
+    fn subject() -> String {
+        Sentence(1..2).fake()
+    }
+
+    fn content() -> String {
+        Paragraph(1..10).fake()
+    }
+
+    fn email() -> SubscriberEmail {
+        SubscriberEmail::parse(SafeEmail().fake()).unwrap()
+    }
+
+    fn email_client(base_url: String) -> EmailClient {
+        EmailClient::new(
+            base_url,
+            email(),
+            Secret::new(Faker.fake()),
+            std::time::Duration::from_millis(200),
+        )
+        .unwrap()
+    }
+
     #[tokio::test]
     async fn send_email_sends_the_expected_request() {
         let mock_server = MockServer::start().await;
-        let sender = SubscriberEmail::parse(SafeEmail().fake()).unwrap();
-        let email_client = EmailClient::new(mock_server.uri(), sender, Secret::new(Faker.fake()))
-            .expect("Failed to create email client");
 
         Mock::given(header_exists("X-Postmark-Server-Token"))
             .and(header("Content-Type", "application/json"))
@@ -127,12 +144,8 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let subscriber_email = SubscriberEmail::parse(SafeEmail().fake()).unwrap();
-        let subject: String = Sentence(1..2).fake();
-        let content: String = Paragraph(1..10).fake();
-
-        let response = email_client
-            .send_email(subscriber_email, &subject, &content, &content)
+        let response = email_client(mock_server.uri())
+            .send_email(email(), &subject(), &content(), &content())
             .await;
 
         assert_ok!(response);
@@ -144,9 +157,6 @@ mod tests {
     #[tokio::test]
     async fn send_email_fails_if_server_return_500() {
         let mock_server = MockServer::start().await;
-        let sender = SubscriberEmail::parse(SafeEmail().fake()).unwrap();
-        let email_client = EmailClient::new(mock_server.uri(), sender, Secret::new(Faker.fake()))
-            .expect("Failed to parse create email client");
 
         Mock::given(any())
             .respond_with(ResponseTemplate::new(500))
@@ -154,12 +164,8 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let subscriber_email = SubscriberEmail::parse(SafeEmail().fake()).unwrap();
-        let subject: String = Sentence(1..2).fake();
-        let content: String = Paragraph(1..10).fake();
-
-        let response = email_client
-            .send_email(subscriber_email, &subject, &content, &content)
+        let response = email_client(mock_server.uri())
+            .send_email(email(), &subject(), &content(), &content())
             .await;
 
         assert_err!(response);
@@ -171,9 +177,6 @@ mod tests {
     #[tokio::test]
     async fn send_email_fails_if_server_takes_too_long_to_respond() {
         let mock_server = MockServer::start().await;
-        let sender = SubscriberEmail::parse(SafeEmail().fake()).unwrap();
-        let email_client = EmailClient::new(mock_server.uri(), sender, Secret::new(Faker.fake()))
-            .expect("Failed to parse create email client");
 
         Mock::given(any())
             .respond_with(ResponseTemplate::new(200).set_delay(std::time::Duration::from_secs(180)))
@@ -181,12 +184,8 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let subscriber_email = SubscriberEmail::parse(SafeEmail().fake()).unwrap();
-        let subject: String = Sentence(1..2).fake();
-        let content: String = Paragraph(1..10).fake();
-
-        let response = email_client
-            .send_email(subscriber_email, &subject, &content, &content)
+        let response = email_client(mock_server.uri())
+            .send_email(email(), &subject(), &content(), &content())
             .await;
 
         assert_err!(response);

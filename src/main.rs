@@ -22,10 +22,12 @@ async fn main() -> std::io::Result<()> {
         .sender()
         .expect("Invalid sender email");
 
+    let timeout = configuration.email_client.timeout();
     let email_client = EmailClient::new(
         configuration.email_client.base_url,
         sender,
         configuration.email_client.authorization_token,
+        timeout,
     )
     .expect("Failed to parse email server url");
 
