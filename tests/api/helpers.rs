@@ -1,9 +1,7 @@
 use newsletter::configuration::{get_configuration, DatabaseSettings};
-use newsletter::email_client::EmailClient;
-use newsletter::startup::run;
+use newsletter::startup::{get_configuration_pool, Application};
 use newsletter::telemetry::{get_subscriber, init_subscriber};
 use sqlx::{Connection, Executor, PgConnection, PgPool};
-use std::net::TcpListener;
 use std::sync::Once;
 
 use uuid::Uuid;
@@ -22,36 +20,20 @@ pub async fn spawn_app() -> TestApp {
         });
     }
 
-    let lst = TcpListener::bind("127.0.0.1:0").expect("Failed to bind random post for testing");
-    let port = lst.local_addr().unwrap().port();
-    let address = format!("http://127.0.0.1:{}", port);
-
     let mut configuration = get_configuration().expect("Failed to get configuration");
     configuration.database.database_name = Uuid::new_v4().to_string();
+    configuration.database.port = 0;
 
-    let connection_pool = configure_database(&configuration.database).await;
+    configure_database(&configuration.database).await;
 
-    let sender = configuration
-        .email_client
-        .sender()
-        .expect("Invalid sender email");
+    let app = Application::build(configuration.clone()).await.expect("Failed to create application");
 
-    let timeout = configuration.email_client.timeout();
-    let email_client = EmailClient::new(
-        configuration.email_client.base_url,
-        sender,
-        configuration.email_client.authorization_token,
-        timeout,
-    )
-    .expect("Failed to test, due to invalid email server url");
-
-    let server = run(lst, connection_pool.clone(), email_client).expect("Failed to bind address");
-
-    let _ = tokio::spawn(server);
+    let address = format!("http://127.0.0.1:{}", app.port());
+    let _ = tokio::spawn(app.run_until_stopped());
 
     TestApp {
         address,
-        db_pool: connection_pool,
+        db_pool: get_configuration_pool(&configuration.database),
     }
 }
 
