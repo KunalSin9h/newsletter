@@ -2,7 +2,6 @@ use newsletter::configuration::{get_configuration, DatabaseSettings};
 use newsletter::email_client::EmailClient;
 use newsletter::startup::run;
 use newsletter::telemetry::{get_subscriber, init_subscriber};
-use secrecy::ExposeSecret;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use std::net::TcpListener;
 use std::sync::Once;
@@ -10,7 +9,6 @@ use std::sync::Once;
 use uuid::Uuid;
 
 static START: Once = Once::new();
-
 pub struct TestApp {
     pub address: String,
     pub db_pool: PgPool,
@@ -57,7 +55,7 @@ pub async fn spawn_app() -> TestApp {
     }
 }
 
-pub async fn configure_database(config: &DatabaseSettings) -> PgPool {
+async fn configure_database(config: &DatabaseSettings) -> PgPool {
     // Create the database
     let mut connection = PgConnection::connect_with(&config.without_db())
         .await
@@ -79,20 +77,4 @@ pub async fn configure_database(config: &DatabaseSettings) -> PgPool {
         .expect("Failed to migrate the database");
 
     connection_pool
-}
-
-#[tokio::test]
-async fn health_check_success() {
-    let test_app = spawn_app().await;
-
-    let client = reqwest::Client::new();
-
-    let response = client
-        .get(&format!("{}/health_check", test_app.address))
-        .send()
-        .await
-        .expect("Failed to execute request.");
-
-    assert!(response.status().is_success());
-    assert_eq!(Some(0), response.content_length());
 }

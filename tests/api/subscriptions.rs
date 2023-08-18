@@ -1,8 +1,8 @@
-mod health_check;
+use crate::helpers::spawn_app;
 
 #[tokio::test]
 async fn subscribe_return_a_200_for_valid_form_data() {
-    let test_app = health_check::spawn_app().await;
+    let test_app = spawn_app().await;
 
     let client = reqwest::Client::new();
 
@@ -29,7 +29,7 @@ async fn subscribe_return_a_200_for_valid_form_data() {
 
 #[tokio::test]
 async fn subscribe_return_a_400_when_data_is_missing() {
-    let test_app = health_check::spawn_app().await;
+    let test_app = spawn_app().await;
 
     let client = reqwest::Client::new();
 
@@ -59,7 +59,7 @@ async fn subscribe_return_a_400_when_data_is_missing() {
 
 #[tokio::test]
 async fn subscribe_return_a_200_when_fields_are_present_but_empty() {
-    let test_app = health_check::spawn_app().await;
+    let test_app = spawn_app().await;
     let client = reqwest::Client::new();
 
     let test_cases = vec![
