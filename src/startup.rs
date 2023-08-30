@@ -38,7 +38,7 @@ impl Application {
         );
 
         // A tcp listener for listening on port
-        let lst = TcpListener::bind(&address)?;
+        let lst = TcpListener::bind(address)?;
         let port = lst.local_addr().unwrap().port();
         let server = run(lst, connection_pool, email_client)?;
 

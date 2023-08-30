@@ -14,4 +14,6 @@ services:
       APP_DATABASE__PASSWORD: password
       APP_DATABASE__HOST: localhost
       APP_DATABASE__PORT: 5432
-      APP_ENVIRONMENT: local
+      APP_EMAIL_CLIENT__BASE_URL: "api.email@cm.cm"
+      APP_EMAIL_CLIENT__SENDER_EMAIL: "xyz"
+      APP_EMAIL_CLIENT_AUTHORIZATION_TOKEN: "token"
