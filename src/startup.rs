@@ -1,11 +1,11 @@
 use actix_web::dev::Server;
 use actix_web::{web, App, HttpServer};
-use sqlx::{PgPool, Postgres, Pool};
 use sqlx::postgres::PgPoolOptions;
+use sqlx::{PgPool, Pool, Postgres};
 use std::net::TcpListener;
 use tracing_actix_web::TracingLogger;
 
-use crate::configuration::{Settings, DatabaseSettings};
+use crate::configuration::{DatabaseSettings, Settings};
 use crate::email_client::EmailClient;
 use crate::routes::{health_check, subscribe};
 
@@ -16,8 +16,7 @@ pub struct Application {
 
 impl Application {
     pub async fn build(configuration: Settings) -> Result<Self, std::io::Error> {
-
-        let connection_pool = get_configuration_pool(&configuration.database); 
+        let connection_pool = get_configuration_pool(&configuration.database);
 
         let sender = configuration
             .email_client
@@ -38,14 +37,13 @@ impl Application {
             configuration.application.host, configuration.application.port
         );
 
-        
         // A tcp listener for listening on port
         let lst = TcpListener::bind(&address)?;
         let port = lst.local_addr().unwrap().port();
-        let server =  run(lst, connection_pool, email_client)?;
+        let server = run(lst, connection_pool, email_client)?;
 
-        Ok(Self{port, server})
-    }   
+        Ok(Self { port, server })
+    }
 
     pub fn port(&self) -> u16 {
         self.port
@@ -54,7 +52,6 @@ impl Application {
     pub async fn run_until_stopped(self) -> std::io::Result<()> {
         self.server.await
     }
-
 }
 
 pub fn run(
@@ -76,8 +73,6 @@ pub fn run(
 
     Ok(server)
 }
-
-
 
 pub fn get_configuration_pool(db: &DatabaseSettings) -> Pool<Postgres> {
     PgPoolOptions::new()

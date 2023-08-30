@@ -12,6 +12,18 @@ pub struct TestApp {
     pub db_pool: PgPool,
 }
 
+impl TestApp {
+    pub async fn post_subscriptions(&self, body: String) -> reqwest::Response {
+        reqwest::Client::new()
+            .post(&format!("{}/subscriptions", &self.address))
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .body(body)
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
+}
+
 pub async fn spawn_app() -> TestApp {
     if std::env::var("TEST_LOG").is_ok() {
         let subscriber = get_subscriber("test".into(), "debug".into());
@@ -20,13 +32,18 @@ pub async fn spawn_app() -> TestApp {
         });
     }
 
-    let mut configuration = get_configuration().expect("Failed to get configuration");
-    configuration.database.database_name = Uuid::new_v4().to_string();
-    configuration.database.port = 0;
+    let configuration = {
+        let mut c = get_configuration().expect("Failed to get configuration");
+        c.database.database_name = Uuid::new_v4().to_string();
+        c.database.port = 0;
+        c
+    };
 
     configure_database(&configuration.database).await;
 
-    let app = Application::build(configuration.clone()).await.expect("Failed to create application");
+    let app = Application::build(configuration.clone())
+        .await
+        .expect("Failed to create application");
 
     let address = format!("http://127.0.0.1:{}", app.port());
     let _ = tokio::spawn(app.run_until_stopped());
