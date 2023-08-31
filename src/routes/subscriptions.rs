@@ -49,13 +49,12 @@ pub async fn insert_subscriber(
     sqlx::query!(
         r#"
     INSERT INTO subscriptions (id, email, name, subscription_at, status)
-    VALUES ($1, $2, $3, $4, $5)
+    VALUES ($1, $2, $3, $4, 'confirmed')
     "#,
         sqlx::types::Uuid::new_v4(),
         new_subscriber.email.as_ref(),
         new_subscriber.name.as_ref(),
-        Utc::now(),
-        "confirmed"
+        Utc::now()
     )
     .execute(pool)
     .await
