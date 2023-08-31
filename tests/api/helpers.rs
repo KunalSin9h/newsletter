@@ -1,5 +1,5 @@
 use newsletter::configuration::{get_configuration, DatabaseSettings};
-use newsletter::startup::{get_configuration_pool, Application};
+use newsletter::startup::Application;
 use newsletter::telemetry::{get_subscriber, init_subscriber};
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use std::sync::Once;
@@ -7,6 +7,7 @@ use std::sync::Once;
 use uuid::Uuid;
 
 static START: Once = Once::new();
+
 pub struct TestApp {
     pub address: String,
     pub db_pool: PgPool,
@@ -15,7 +16,7 @@ pub struct TestApp {
 impl TestApp {
     pub async fn post_subscriptions(&self, body: String) -> reqwest::Response {
         reqwest::Client::new()
-            .post(&format!("{}/subscriptions", &self.address))
+            .post(&format!("{}/subscription", &self.address))
             .header("Content-Type", "application/x-www-form-urlencoded")
             .body(body)
             .send()
@@ -35,11 +36,11 @@ pub async fn spawn_app() -> TestApp {
     let configuration = {
         let mut c = get_configuration().expect("Failed to get configuration");
         c.database.database_name = Uuid::new_v4().to_string();
-        c.database.port = 0;
+        c.application.port = 0;
         c
     };
 
-    configure_database(&configuration.database).await;
+    let pg_pool = configure_database(&configuration.database).await;
 
     let app = Application::build(configuration.clone())
         .await
@@ -50,7 +51,7 @@ pub async fn spawn_app() -> TestApp {
 
     TestApp {
         address,
-        db_pool: get_configuration_pool(&configuration.database),
+        db_pool: pg_pool,
     }
 }
 
