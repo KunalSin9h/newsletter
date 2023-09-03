@@ -8,9 +8,12 @@ use uuid::Uuid;
 
 static START: Once = Once::new();
 
+use wiremock::MockServer;
+
 pub struct TestApp {
     pub address: String,
     pub db_pool: PgPool,
+    pub email_server: MockServer,
 }
 
 impl TestApp {
@@ -33,10 +36,13 @@ pub async fn spawn_app() -> TestApp {
         });
     }
 
+    let email_server = MockServer::start().await;
+
     let configuration = {
         let mut c = get_configuration().expect("Failed to get configuration");
         c.database.database_name = Uuid::new_v4().to_string();
         c.application.port = 0;
+        c.email_client.base_url = email_server.uri();
         c
     };
 
@@ -52,6 +58,7 @@ pub async fn spawn_app() -> TestApp {
     TestApp {
         address,
         db_pool: pg_pool,
+        email_server,
     }
 }
 

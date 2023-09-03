@@ -25,6 +25,9 @@ validator = "0.14"
 fake = "2.4"
 wiremock = "0.5"
 
+[dev-dependencies]
+linkify = "0.8"
+
 [dependencies.sqlx]
 version = "0.5.7"
 default-features = false
