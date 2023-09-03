@@ -32,10 +32,11 @@ pub async fn subscribe(form: web::Form<FormData>, db_pool: web::Data<PgPool>) ->
         Err(_) => return HttpResponse::BadRequest().finish(),
     };
 
-    match insert_subscriber(&db_pool, &new_subscriber).await {
-        Ok(_) => HttpResponse::Ok().finish(),
-        Err(_) => HttpResponse::InternalServerError().finish(),
+    if insert_subscriber(&db_pool, &new_subscriber).await.is_err() {
+        return HttpResponse::InternalServerError().finish();
     }
+
+    HttpResponse::Ok().finish()
 }
 
 #[tracing::instrument(
