@@ -1303,6 +1303,7 @@ dependencies = [
  "config",
  "fake",
  "linkify",
+ "rand 0.8.5",
  "reqwest",
  "secrecy",
  "serde 1.0.188",
