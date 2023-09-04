@@ -40,7 +40,12 @@ impl Application {
         // A tcp listener for listening on port
         let lst = TcpListener::bind(address)?;
         let port = lst.local_addr().unwrap().port();
-        let server = run(lst, connection_pool, email_client)?;
+        let server = run(
+            lst,
+            connection_pool,
+            email_client,
+            configuration.application.base_url,
+        )?;
 
         Ok(Self { port, server })
     }
@@ -58,9 +63,12 @@ pub fn run(
     listener: TcpListener,
     db_pool: PgPool,
     email_client: EmailClient,
+    base_url: String,
 ) -> Result<Server, std::io::Error> {
     let connection = web::Data::new(db_pool);
     let email_client = web::Data::new(email_client);
+    let base_url = web::Data::new(base_url);
+
     let server = HttpServer::new(move || {
         App::new()
             .wrap(TracingLogger::default()) // Use this middleware
@@ -69,6 +77,7 @@ pub fn run(
             .route("/subscription/confirm", web::get().to(confirm))
             .app_data(connection.clone())
             .app_data(email_client.clone())
+            .app_data(base_url.clone())
     })
     .listen(listener)?
     .run();

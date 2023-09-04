@@ -30,6 +30,7 @@ pub async fn subscribe(
     form: web::Form<FormData>,
     db_pool: web::Data<PgPool>,
     email_client: web::Data<EmailClient>,
+    base_url: web::Data<String>,
 ) -> HttpResponse {
     let new_subscriber = match parse_subscriber(form.0) {
         Ok(subscriber) => subscriber,
@@ -40,7 +41,7 @@ pub async fn subscribe(
         return HttpResponse::InternalServerError().finish();
     }
 
-    if send_confirmation_email(&email_client, new_subscriber)
+    if send_confirmation_email(&email_client, new_subscriber, &base_url)
         .await
         .is_err()
     {
@@ -52,14 +53,17 @@ pub async fn subscribe(
 
 #[tracing::instrument(
     name = "Send a confirmation email to a new subscriber",
-    skip(email_client, new_sub)
+    skip(email_client, new_sub, base_url)
 )]
 pub async fn send_confirmation_email(
     email_client: &web::Data<EmailClient>,
     new_sub: NewSubscriber,
+    base_url: &web::Data<String>,
 ) -> Result<(), reqwest::Error> {
-    let confirmation_link =
-        "http://newsletter.kunalsin9h.com/subscription/confirm?token=random_token";
+    let confirmation_link = format!(
+        "{}/subscription/confirm?subscription_token=random_token",
+        base_url.as_str()
+    );
     let text_body = &format!(
         "Welcome to my Newsletter!\nVisit {} to confirm your subscription",
         confirmation_link

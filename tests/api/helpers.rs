@@ -1,6 +1,9 @@
 use newsletter::configuration::{get_configuration, DatabaseSettings};
+
+
 use newsletter::startup::Application;
 use newsletter::telemetry::{get_subscriber, init_subscriber};
+
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use std::sync::Once;
 
@@ -12,8 +15,14 @@ use wiremock::MockServer;
 
 pub struct TestApp {
     pub address: String,
+    pub port: u16,
     pub db_pool: PgPool,
     pub email_server: MockServer,
+}
+
+pub struct ConfirmationLink {
+    pub html_link: reqwest::Url,
+    pub text_link: reqwest::Url,
 }
 
 impl TestApp {
@@ -25,6 +34,34 @@ impl TestApp {
             .send()
             .await
             .expect("Failed to execute request.")
+    }
+
+    pub async fn get_confirmation_url(
+        &self,
+        email_request: &wiremock::Request,
+    ) -> ConfirmationLink {
+        let body: serde_json::Value = serde_json::from_slice(&email_request.body).unwrap();
+
+        let get_link = |s: &str| {
+            let links: Vec<_> = linkify::LinkFinder::new()
+                .links(s)
+                .filter(|l| *l.kind() == linkify::LinkKind::Url)
+                .collect();
+            assert_eq!(links.len(), 1);
+            let raw_link = links[0].as_str().to_owned();
+            let mut confirm_link = reqwest::Url::parse(&raw_link).unwrap();
+            assert_eq!(confirm_link.host_str().unwrap(), "127.0.0.1");
+            confirm_link.set_port(Some(self.port)).unwrap();
+            confirm_link
+        };
+
+        let html_link = get_link(&body["HtmlBody"].as_str().unwrap());
+        let text_link = get_link(&body["TextBody"].as_str().unwrap());
+
+        ConfirmationLink {
+            html_link,
+            text_link,
+        }
     }
 }
 
@@ -52,11 +89,13 @@ pub async fn spawn_app() -> TestApp {
         .await
         .expect("Failed to create application");
 
-    let address = format!("http://127.0.0.1:{}", app.port());
+    let port = app.port();
+    let address = format!("http://127.0.0.1:{}", &port);
     let _ = tokio::spawn(app.run_until_stopped());
 
     TestApp {
         address,
+        port,
         db_pool: pg_pool,
         email_server,
     }
