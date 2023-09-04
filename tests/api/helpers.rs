@@ -1,9 +1,6 @@
 use newsletter::configuration::{get_configuration, DatabaseSettings};
-
-
 use newsletter::startup::Application;
 use newsletter::telemetry::{get_subscriber, init_subscriber};
-
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use std::sync::Once;
 
