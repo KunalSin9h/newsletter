@@ -3,7 +3,7 @@ use chrono::Utc;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use sqlx::types::Uuid;
-use sqlx::{PgPool, Pool};
+use sqlx::PgPool;
 
 use crate::{domain::NewSubscriber, email_client::EmailClient};
 

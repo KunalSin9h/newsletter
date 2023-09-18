@@ -36,7 +36,7 @@ pub async fn the_link_returned_by_subscribe_will_give_200_when_hit() {
 }
 
 #[tokio::test]
-pub async fn clicking_ok_confirmation_link_confirms_a_subscriber() {
+pub async fn clicking_confirmation_link_confirms_a_subscriber() {
     let test_app = spawn_app().await;
     let name = "A%20B";
     let email = "AB%40email.com";
