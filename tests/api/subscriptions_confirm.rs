@@ -40,7 +40,7 @@ pub async fn clicking_confirmation_link_confirms_a_subscriber() {
     let test_app = spawn_app().await;
     let name = "A%20B";
     let email = "AB%40email.com";
-    let body = format!("{}&{}", &name, &email);
+    let body = format!("name={}&email={}", &name, &email);
 
     Mock::given(path("/email"))
         .and(method("POST"))
@@ -65,7 +65,7 @@ pub async fn clicking_confirmation_link_confirms_a_subscriber() {
         .await
         .expect("Failed to fetch saved subscription.");
 
-    assert_eq!(saved.email, email);
-    assert_eq!(saved.name, name);
+    assert_eq!(saved.email, "AB@email.com");
+    assert_eq!(saved.name, "A B");
     assert_eq!(saved.status, "confirmed");
 }
