@@ -109,3 +109,18 @@ async fn subscribe_sends_a_confirmation_email_when_valid_data() {
     let confirmation_links = test_app.get_confirmation_url(email_request).await;
     assert_eq!(confirmation_links.html_link, confirmation_links.text_link);
 }
+
+#[tokio::test]
+async fn subscribe_fails_if_there_if_fatal_db_error() {
+    let test_app = spawn_app().await;
+    let body = "name=Test%20%Test&email=Test%40email.com";
+
+    sqlx::query!("ALTER TABLE subscription_tokens DROP COLUMN subscription_token;",)
+        .execute(&test_app.db_pool)
+        .await
+        .unwrap();
+
+    let response = test_app.post_subscriptions(body.into()).await;
+
+    assert_eq!(response.status().as_u16(), 500);
+}
