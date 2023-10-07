@@ -7,16 +7,22 @@ use sqlx::PgPool;
 
 use crate::{domain::NewSubscriber, email_client::EmailClient};
 
+use super::SubscribeError;
+
 #[derive(serde::Deserialize)]
 pub struct FormData {
     name: String,
     email: String,
 }
 
-pub fn parse_subscriber(form: FormData) -> Result<NewSubscriber, String> {
-    let name = form.name.try_into()?;
-    let email = form.email.try_into()?;
-    Ok(NewSubscriber { name, email })
+impl TryFrom<FormData> for NewSubscriber {
+    type Error = String;
+
+    fn try_from(form: FormData) -> Result<Self, Self::Error> {
+        let name = form.name.try_into()?;
+        let email = form.email.try_into()?;
+        Ok(NewSubscriber { name, email })
+    }
 }
 
 // POST /subscribe
@@ -34,41 +40,25 @@ pub async fn subscribe(
     db_pool: web::Data<PgPool>,
     email_client: web::Data<EmailClient>,
     base_url: web::Data<String>,
-) -> Result<HttpResponse, actix_web::Error> {
-    let new_subscriber = match parse_subscriber(form.0) {
-        Ok(subscriber) => subscriber,
-        Err(_) => return Ok(HttpResponse::BadRequest().finish()),
-    };
+) -> Result<HttpResponse, SubscribeError> {
+    let new_subscriber = form.0.try_into()?;
 
-    let mut transition = match db_pool.begin().await {
-        Ok(transition) => transition,
-        Err(_) => return Ok(HttpResponse::InternalServerError().finish()),
-    };
+    let mut transition = db_pool.begin().await?;
 
-    let subscriber_id = match insert_subscriber(&mut transition, &new_subscriber).await {
-        Ok(id) => id,
-        Err(_) => return Ok(HttpResponse::InternalServerError().finish()),
-    };
+    let subscriber_id = insert_subscriber(&mut transition, &new_subscriber).await?;
 
     let subscription_token = generate_subscription_token();
-
     store_token(&mut transition, subscriber_id, &subscription_token).await?;
 
-    if transition.commit().await.is_err() {
-        return Ok(HttpResponse::InternalServerError().finish());
-    }
+    transition.commit().await?;
 
-    if send_confirmation_email(
+    send_confirmation_email(
         &email_client,
         new_subscriber,
         &base_url,
         &subscription_token,
     )
-    .await
-    .is_err()
-    {
-        return Ok(HttpResponse::InternalServerError().finish());
-    }
+    .await?;
 
     Ok(HttpResponse::Ok().finish())
 }
