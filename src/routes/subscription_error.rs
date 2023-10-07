@@ -1,7 +1,6 @@
-use super::StoreTokenError;
+use super::{error_chain_printer, StoreTokenError};
 use actix_web::http::StatusCode;
 
-#[derive(Debug)]
 pub enum SubscribeError {
     ValidationError(String),
     DatabaseError(sqlx::Error),
@@ -9,13 +8,37 @@ pub enum SubscribeError {
     SendEmailError(reqwest::Error),
 }
 
-impl std::fmt::Display for SubscribeError {
+impl std::fmt::Debug for SubscribeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Failed to create a new subscriber")
+        error_chain_printer(self, f)
     }
 }
 
-impl std::error::Error for SubscribeError {}
+impl std::fmt::Display for SubscribeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::ValidationError(e) => write!(f, "{}", e),
+            Self::DatabaseError(_) => write!(f, "Database error"),
+            Self::StoreTokenError(_) => {
+                write!(f, "Failed to store confirmation token for a new subscriber")
+            }
+            Self::SendEmailError(_) => {
+                write!(f, "Failed to send confirmation token")
+            }
+        }
+    }
+}
+
+impl std::error::Error for SubscribeError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::ValidationError(_) => None,
+            Self::DatabaseError(e) => Some(e),
+            Self::StoreTokenError(e) => Some(e),
+            Self::SendEmailError(e) => Some(e),
+        }
+    }
+}
 
 impl actix_web::ResponseError for SubscribeError {
     fn status_code(&self) -> StatusCode {
