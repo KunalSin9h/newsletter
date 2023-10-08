@@ -43,14 +43,22 @@ pub async fn subscribe(
 ) -> Result<HttpResponse, SubscribeError> {
     let new_subscriber = form.0.try_into()?;
 
-    let mut transition = db_pool.begin().await?;
+    let mut transition = db_pool
+        .begin()
+        .await
+        .map_err(|e| SubscribeError::PoolError(e))?;
 
-    let subscriber_id = insert_subscriber(&mut transition, &new_subscriber).await?;
+    let subscriber_id = insert_subscriber(&mut transition, &new_subscriber)
+        .await
+        .map_err(|e| SubscribeError::InsertSubscriberError(e))?;
 
     let subscription_token = generate_subscription_token();
     store_token(&mut transition, subscriber_id, &subscription_token).await?;
 
-    transition.commit().await?;
+    transition
+        .commit()
+        .await
+        .map_err(|e| SubscribeError::TransactionCommitError(e))?;
 
     send_confirmation_email(
         &email_client,
