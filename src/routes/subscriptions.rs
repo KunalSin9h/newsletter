@@ -46,11 +46,11 @@ pub async fn subscribe(
     let mut transition = db_pool
         .begin()
         .await
-        .map_err(|e| SubscribeError::PoolError(e))?;
+        .map_err(SubscribeError::PoolError)?;
 
     let subscriber_id = insert_subscriber(&mut transition, &new_subscriber)
         .await
-        .map_err(|e| SubscribeError::InsertSubscriberError(e))?;
+        .map_err(SubscribeError::InsertSubscriberError)?;
 
     let subscription_token = generate_subscription_token();
     store_token(&mut transition, subscriber_id, &subscription_token).await?;
@@ -58,7 +58,7 @@ pub async fn subscribe(
     transition
         .commit()
         .await
-        .map_err(|e| SubscribeError::TransactionCommitError(e))?;
+        .map_err(SubscribeError::TransactionCommitError)?;
 
     send_confirmation_email(
         &email_client,
