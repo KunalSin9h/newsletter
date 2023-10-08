@@ -43,10 +43,7 @@ pub async fn subscribe(
 ) -> Result<HttpResponse, SubscribeError> {
     let new_subscriber = form.0.try_into()?;
 
-    let mut transition = db_pool
-        .begin()
-        .await
-        .map_err(SubscribeError::PoolError)?;
+    let mut transition = db_pool.begin().await.map_err(SubscribeError::PoolError)?;
 
     let subscriber_id = insert_subscriber(&mut transition, &new_subscriber)
         .await
