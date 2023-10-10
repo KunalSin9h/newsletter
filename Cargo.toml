@@ -25,6 +25,8 @@ validator = "0.14"
 fake = "2.4"
 wiremock = "0.5"
 rand = {version = "0.8", features = ["std_rng"]}
+anyhow = "1.0.75"
+thiserror = "1.0.49"
 
 [dev-dependencies]
 linkify = "0.8"
