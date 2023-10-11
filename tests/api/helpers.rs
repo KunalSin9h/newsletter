@@ -1,10 +1,9 @@
 use newsletter::configuration::{get_configuration, DatabaseSettings};
 use newsletter::startup::Application;
 use newsletter::telemetry::{get_subscriber, init_subscriber};
+use sqlx::types::Uuid;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use std::sync::Once;
-
-use uuid::Uuid;
 
 static START: Once = Once::new();
 
@@ -34,13 +33,24 @@ impl TestApp {
     }
 
     pub async fn post_newsletter(&self, body: serde_json::Value) -> reqwest::Response {
+        let (username, password) = self.test_user().await;
+
         reqwest::Client::new()
             .post(format!("{}/newsletters", &self.address))
-            .basic_auth(Uuid::new_v4().to_string(), Some(Uuid::new_v4().to_string()))
+            .basic_auth(username, Some(password))
             .json(&body)
             .send()
             .await
             .expect("failed to send newsletter")
+    }
+
+    pub async fn test_user(&self) -> (String, String) {
+        let row = sqlx::query!("SELECT username, password FROM users LIMIT 1")
+            .fetch_one(&self.db_pool)
+            .await
+            .expect("failed to get test user's username and password");
+
+        (row.username, row.password)
     }
 
     pub async fn get_confirmation_url(
@@ -100,12 +110,28 @@ pub async fn spawn_app() -> TestApp {
     let address = format!("http://127.0.0.1:{}", &port);
     let _ = tokio::spawn(app.run_until_stopped());
 
+    add_test_user(&pg_pool).await;
+
     TestApp {
         address,
         port,
         db_pool: pg_pool,
         email_server,
     }
+}
+
+async fn add_test_user(pool: &PgPool) {
+    sqlx::query!(
+        "
+        INSERT INTO users (user_id, username, password) VALUES ($1, $2, $3)
+        ",
+        Uuid::new_v4(),
+        Uuid::new_v4().to_string(),
+        Uuid::new_v4().to_string(),
+    )
+    .execute(pool)
+    .await
+    .expect("Failed to create a new test user");
 }
 
 async fn configure_database(config: &DatabaseSettings) -> PgPool {
