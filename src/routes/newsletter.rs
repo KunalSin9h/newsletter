@@ -5,8 +5,9 @@ use actix_web::{
 };
 use anyhow::Context;
 use base64::{engine::general_purpose, Engine as _};
-use secrecy::Secret;
+use secrecy::{ExposeSecret, Secret};
 use sqlx::PgPool;
+use uuid::Uuid;
 
 use crate::{domain::SubscriberEmail, email_client::EmailClient};
 
@@ -33,51 +34,14 @@ pub struct Credentials {
     password: Secret<String>,
 }
 
-fn basic_authentication(headers: &HeaderMap) -> Result<Credentials, anyhow::Error> {
-    let header_value = headers
-        .get("Authorization")
-        .context(r#"The "Authorization" header is missing"#)?
-        .to_str()
-        .context(r#"The "Authorization" header is not a valid UTF-8 string"#)?;
-
-    let base64encoded_segment = header_value
-        .strip_prefix("Basic ")
-        .context("The authorization scheme is not basic")?;
-
-    let decoded_bytes = general_purpose::STANDARD
-        .decode(base64encoded_segment)
-        .context("Failed to base64-decode the basic credential")?;
-
-    let decoded_credentials = String::from_utf8(decoded_bytes)
-        .context("The decoded credential string is not a valid UTF-8 sequence")?;
-
-    let mut credentials = decoded_credentials.splitn(2, ':');
-
-    let username = credentials
-        .next()
-        .ok_or_else(|| anyhow::anyhow!(r#"A username must be provided in the "Basic" auth"#))?
-        .to_string();
-
-    let password = credentials
-        .next()
-        .ok_or_else(|| anyhow::anyhow!(r#"A password must be provided in the "Basic" auth"#))?
-        .to_string();
-
-    Ok(Credentials {
-        username,
-        password: Secret::new(password),
-    })
-}
-
 pub async fn publish_newsletter(
     body: web::Json<BodyData>,
     pool: web::Data<PgPool>,
     email_client: web::Data<EmailClient>,
     request: HttpRequest,
 ) -> Result<HttpResponse, PublishError> {
-    // Authentication
-    let _credential = basic_authentication(request.headers()).map_err(PublishError::AuthError)?;
-    // -----------------------------------------------
+    let credential = basic_authentication(request.headers()).map_err(PublishError::AuthError)?;
+    let user_id = validate_credential(credential, &pool).await?;
 
     let subscribers = get_confirmed_subscribers(&pool).await?;
     for subscriber in subscribers {
@@ -106,6 +70,30 @@ pub async fn publish_newsletter(
     }
 
     Ok(HttpResponse::Ok().finish())
+}
+
+async fn validate_credential(
+    credential: Credentials,
+    pool: &PgPool,
+) -> Result<sqlx::types::Uuid, PublishError> {
+    let user_id: Option<_> = sqlx::query!(
+        r#"
+        SELECT user_id
+        FROM users
+        WHERE username = $1 AND password = $2
+    "#,
+        credential.username,
+        credential.password.expose_secret()
+    )
+    .fetch_optional(pool)
+    .await
+    .context("Failed to execute query to validate user credential")
+    .map_err(PublishError::AuthError)?;
+
+    user_id
+        .map(|r| r.user_id)
+        .ok_or_else(|| anyhow::anyhow!("Invalid username or password"))
+        .map_err(PublishError::AuthError)
 }
 
 #[tracing::instrument(name = "Get confirmed subscribers", skip(pool))]
@@ -165,4 +153,40 @@ impl actix_web::ResponseError for PublishError {
             }
         }
     }
+}
+
+fn basic_authentication(headers: &HeaderMap) -> Result<Credentials, anyhow::Error> {
+    let header_value = headers
+        .get("Authorization")
+        .context(r#"The "Authorization" header is missing"#)?
+        .to_str()
+        .context(r#"The "Authorization" header is not a valid UTF-8 string"#)?;
+
+    let base64encoded_segment = header_value
+        .strip_prefix("Basic ")
+        .context("The authorization scheme is not basic")?;
+
+    let decoded_bytes = general_purpose::STANDARD
+        .decode(base64encoded_segment)
+        .context("Failed to base64-decode the basic credential")?;
+
+    let decoded_credentials = String::from_utf8(decoded_bytes)
+        .context("The decoded credential string is not a valid UTF-8 sequence")?;
+
+    let mut credentials = decoded_credentials.splitn(2, ':');
+
+    let username = credentials
+        .next()
+        .ok_or_else(|| anyhow::anyhow!(r#"A username must be provided in the "Basic" auth"#))?
+        .to_string();
+
+    let password = credentials
+        .next()
+        .ok_or_else(|| anyhow::anyhow!(r#"A password must be provided in the "Basic" auth"#))?
+        .to_string();
+
+    Ok(Credentials {
+        username,
+        password: Secret::new(password),
+    })
 }
