@@ -124,3 +124,27 @@ async fn publish_newsletter_return_400_for_invalid_body() {
         );
     }
 }
+
+#[tokio::test]
+async fn request_with_missing_authorization_header_must_be_rejected() {
+    let app = spawn_app().await;
+
+    let response = reqwest::Client::new()
+        .post(format!("{}/newsletters", &app.address))
+        .json(&serde_json::json!({
+            "title": "Newsletter Title",
+            "content": {
+                "text": "Text content",
+                "html": "<h1>Html content</h1>",
+            }
+        }))
+        .send()
+        .await
+        .expect("failed to exec request");
+
+    assert_eq!(response.status().as_u16(), 401);
+    assert_eq!(
+        response.headers()["WWW-Authenticate"],
+        r#"Basic realm="publish""#
+    );
+}
