@@ -45,12 +45,12 @@ impl TestApp {
     }
 
     pub async fn test_user(&self) -> (String, String) {
-        let row = sqlx::query!("SELECT username, password FROM users LIMIT 1")
+        let row = sqlx::query!("SELECT username, password_hash FROM users LIMIT 1")
             .fetch_one(&self.db_pool)
             .await
             .expect("failed to get test user's username and password");
 
-        (row.username, row.password)
+        (row.username, row.password_hash)
     }
 
     pub async fn get_confirmation_url(
@@ -123,7 +123,7 @@ pub async fn spawn_app() -> TestApp {
 async fn add_test_user(pool: &PgPool) {
     sqlx::query!(
         "
-        INSERT INTO users (user_id, username, password) VALUES ($1, $2, $3)
+        INSERT INTO users (user_id, username, password_hash) VALUES ($1, $2, $3)
         ",
         Uuid::new_v4(),
         Uuid::new_v4().to_string(),

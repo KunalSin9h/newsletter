@@ -4,8 +4,11 @@ use actix_web::{
     web, HttpRequest, HttpResponse,
 };
 use anyhow::Context;
+use argon2::password_hash::Salt;
 use base64::{engine::general_purpose, Engine as _};
-use secrecy::{ExposeSecret, Secret};
+use argon2::{Algorithm, Params, Version, Argon2};
+use argon2::PasswordHasher;
+use secrecy::{Secret, ExposeSecret};
 use sqlx::PgPool;
 
 use crate::{domain::SubscriberEmail, email_client::EmailClient};
@@ -83,24 +86,47 @@ async fn validate_credential(
     credential: Credentials,
     pool: &PgPool,
 ) -> Result<sqlx::types::Uuid, PublishError> {
-    let user_id: Option<_> = sqlx::query!(
+    let hasher = Argon2::new(Algorithm::Argon2id, Version::V0x13, 
+         Params::new(15000, 2, 1, None)
+         .context("Failed to build argon2 parameters")
+         .map_err(PublishError::UnexpectedError)?
+     );
+
+    let row: Option<_> = sqlx::query!(
         r#"
-        SELECT user_id
+        SELECT user_id, password_hash, password_salt
         FROM users
-        WHERE username = $1 AND password = $2
+        WHERE username = $1
     "#,
-        credential.username,
-        credential.password.expose_secret()
+        credential.username
     )
     .fetch_optional(pool)
     .await
     .context("Failed to execute query to validate user credential")
     .map_err(PublishError::AuthError)?;
 
-    user_id
-        .map(|r| r.user_id)
-        .ok_or_else(|| anyhow::anyhow!("Invalid username or password"))
-        .map_err(PublishError::AuthError)
+    let (user_id, expected_password, salt) = match row {
+        Some(row) => (row.user_id, row.password_hash, row.password_salt),
+        None => {
+            return Err(PublishError::AuthError(anyhow::anyhow!("Unknown username"))); 
+        }
+    };
+
+    let password_hash = hasher.hash_password(credential.password.expose_secret().as_bytes(), Salt::from_b64(&salt)
+        .context("Failed to create salt")
+        .map_err(PublishError::UnexpectedError)?)
+        .context("Failed to hash password")
+        .map_err(PublishError::UnexpectedError)?;
+
+    let password_hash = password_hash.hash.unwrap();
+   
+    if password_hash.to_string() != expected_password {
+        Err(PublishError::AuthError(anyhow::anyhow!(
+            "Invalid password"
+        )))
+    } else{
+        Ok(user_id)
+    }
 }
 
 #[tracing::instrument(name = "Get confirmed subscribers", skip(pool))]
