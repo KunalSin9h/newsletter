@@ -16,13 +16,13 @@ pub struct TestApp {
     pub port: u16,
     pub db_pool: PgPool,
     pub email_server: MockServer,
-    pub test_user: TestUser
+    pub test_user: TestUser,
 }
 
 pub struct TestUser {
     pub user_id: Uuid,
     pub username: String,
-    pub password: String
+    pub password: String,
 }
 
 pub struct ConfirmationLink {
@@ -82,7 +82,11 @@ impl TestApp {
 
 impl TestUser {
     pub fn new() -> Self {
-        TestUser { user_id: Uuid::new_v4(), username: Uuid::new_v4().to_string(), password: Uuid::new_v4().to_string() }
+        TestUser {
+            user_id: Uuid::new_v4(),
+            username: Uuid::new_v4().to_string(),
+            password: Uuid::new_v4().to_string(),
+        }
     }
 
     async fn store(&self, pool: &PgPool) {
@@ -142,7 +146,7 @@ pub async fn spawn_app() -> TestApp {
         port,
         db_pool: pg_pool,
         email_server,
-        test_user
+        test_user,
     }
 }
 
