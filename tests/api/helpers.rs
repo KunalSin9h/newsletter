@@ -1,3 +1,5 @@
+use argon2::password_hash::SaltString;
+use argon2::{Argon2, PasswordHasher};
 use newsletter::configuration::{get_configuration, DatabaseSettings};
 use newsletter::startup::Application;
 use newsletter::telemetry::{get_subscriber, init_subscriber};
@@ -14,6 +16,13 @@ pub struct TestApp {
     pub port: u16,
     pub db_pool: PgPool,
     pub email_server: MockServer,
+    pub test_user: TestUser
+}
+
+pub struct TestUser {
+    pub user_id: Uuid,
+    pub username: String,
+    pub password: String
 }
 
 pub struct ConfirmationLink {
@@ -33,24 +42,13 @@ impl TestApp {
     }
 
     pub async fn post_newsletter(&self, body: serde_json::Value) -> reqwest::Response {
-        let (username, password) = self.test_user().await;
-
         reqwest::Client::new()
             .post(format!("{}/newsletters", &self.address))
-            .basic_auth(username, Some(password))
+            .basic_auth(&self.test_user.username, Some(&self.test_user.password))
             .json(&body)
             .send()
             .await
             .expect("failed to send newsletter")
-    }
-
-    pub async fn test_user(&self) -> (String, String) {
-        let row = sqlx::query!("SELECT username, password_hash FROM users LIMIT 1")
-            .fetch_one(&self.db_pool)
-            .await
-            .expect("failed to get test user's username and password");
-
-        (row.username, row.password_hash)
     }
 
     pub async fn get_confirmation_url(
@@ -82,6 +80,32 @@ impl TestApp {
     }
 }
 
+impl TestUser {
+    pub fn new() -> Self {
+        TestUser { user_id: Uuid::new_v4(), username: Uuid::new_v4().to_string(), password: Uuid::new_v4().to_string() }
+    }
+
+    async fn store(&self, pool: &PgPool) {
+        let salt = SaltString::generate(&mut rand::thread_rng());
+        let password_hash = Argon2::default()
+            .hash_password(self.password.as_bytes(), &salt)
+            .unwrap()
+            .to_string();
+
+        sqlx::query!(
+            "
+            INSERT INTO users (user_id, username, password_hash) VALUES ($1, $2, $3)
+            ",
+            self.user_id,
+            self.username,
+            password_hash
+        )
+        .execute(pool)
+        .await
+        .expect("Failed to create a new test user");
+    }
+}
+
 pub async fn spawn_app() -> TestApp {
     if std::env::var("TEST_LOG").is_ok() {
         let subscriber = get_subscriber("test".into(), "debug".into());
@@ -110,28 +134,16 @@ pub async fn spawn_app() -> TestApp {
     let address = format!("http://127.0.0.1:{}", &port);
     let _ = tokio::spawn(app.run_until_stopped());
 
-    add_test_user(&pg_pool).await;
+    let test_user = TestUser::new();
+    test_user.store(&pg_pool).await;
 
     TestApp {
         address,
         port,
         db_pool: pg_pool,
         email_server,
+        test_user
     }
-}
-
-async fn add_test_user(pool: &PgPool) {
-    sqlx::query!(
-        "
-        INSERT INTO users (user_id, username, password_hash) VALUES ($1, $2, $3)
-        ",
-        Uuid::new_v4(),
-        Uuid::new_v4().to_string(),
-        Uuid::new_v4().to_string(),
-    )
-    .execute(pool)
-    .await
-    .expect("Failed to create a new test user");
 }
 
 async fn configure_database(config: &DatabaseSettings) -> PgPool {

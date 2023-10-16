@@ -4,9 +4,9 @@ use actix_web::{
     web, HttpRequest, HttpResponse,
 };
 use anyhow::Context;
+use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use base64::{engine::general_purpose, Engine as _};
-use argon2::{PasswordHash, PasswordVerifier, Argon2};
-use secrecy::{Secret, ExposeSecret};
+use secrecy::{ExposeSecret, Secret};
 use sqlx::PgPool;
 
 use crate::{domain::SubscriberEmail, email_client::EmailClient};
@@ -101,7 +101,7 @@ async fn validate_credential(
     let (user_id, expected_password_hash) = match row {
         Some(row) => (row.user_id, row.password_hash),
         None => {
-            return Err(PublishError::AuthError(anyhow::anyhow!("Unknown username"))); 
+            return Err(PublishError::AuthError(anyhow::anyhow!("Unknown username")));
         }
     };
 
@@ -111,7 +111,11 @@ async fn validate_credential(
         .context("Failed to parse hash in PHC string format")
         .map_err(PublishError::UnexpectedError)?;
 
-    Argon2::default().verify_password(credential.password.expose_secret().as_bytes(), &expected_password)
+    Argon2::default()
+        .verify_password(
+            credential.password.expose_secret().as_bytes(), 
+            &expected_password,
+        )
         .context("Invalid password")
         .map_err(PublishError::AuthError)?;
 
