@@ -1,3 +1,4 @@
+use crate::telemetry::spawn_blocking_task_with_tracing;
 use actix_web::http::{header, StatusCode};
 use actix_web::{
     http::header::{HeaderMap, HeaderValue},
@@ -7,7 +8,6 @@ use anyhow::Context;
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use base64::{engine::general_purpose, Engine as _};
 use secrecy::{ExposeSecret, Secret};
-use crate::telemetry::spawn_blocking_task_with_tracing;
 use sqlx::PgPool;
 
 use crate::{domain::SubscriberEmail, email_client::EmailClient};
@@ -81,10 +81,7 @@ pub async fn publish_newsletter(
     Ok(HttpResponse::Ok().finish())
 }
 
-#[tracing::instrument(
-    name = "Validate Credentials",
-    skip(credential, pool)
-)]
+#[tracing::instrument(name = "Validate Credentials", skip(credential, pool))]
 async fn validate_credential(
     credential: Credentials,
     pool: &PgPool,
@@ -109,7 +106,10 @@ async fn validate_credential(
     name = "Verify password hash",
     skip(expected_password_hash, original_password)
 )]
-async fn verify_password_hash(expected_password_hash: Secret<String>, original_password: Secret<String>) -> Result<(), PublishError> {
+async fn verify_password_hash(
+    expected_password_hash: Secret<String>,
+    original_password: Secret<String>,
+) -> Result<(), PublishError> {
     // we are parsing that PHC Password string
     // converting row phc string to PasswordHash Struct
     let expected_password = PasswordHash::new(expected_password_hash.expose_secret())
@@ -125,18 +125,18 @@ async fn verify_password_hash(expected_password_hash: Secret<String>, original_p
         .map_err(PublishError::AuthError)
 }
 
-#[tracing::instrument(
-    name = "Get Stored Credentials",
-    skip(username, pool)
-)]
-pub async fn get_stored_credentials(username: &str, pool: &PgPool) -> Result<Option<(sqlx::types::Uuid, Secret<String>)>, anyhow::Error> {
+#[tracing::instrument(name = "Get Stored Credentials", skip(username, pool))]
+pub async fn get_stored_credentials(
+    username: &str,
+    pool: &PgPool,
+) -> Result<Option<(sqlx::types::Uuid, Secret<String>)>, anyhow::Error> {
     let row: Option<_> = sqlx::query!(
         r#"
         SELECT user_id, password_hash
         FROM users
         WHERE username = $1
     "#,
-    username
+        username
     )
     .fetch_optional(pool)
     .await
