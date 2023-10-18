@@ -1,10 +1,12 @@
 mod health_check;
+pub mod home;
 mod newsletter;
 mod subscription_error;
 mod subscriptions;
 mod subscriptions_confirm;
 
 pub use health_check::*;
+pub use home::*;
 pub use newsletter::*;
 pub use subscription_error::*;
 pub use subscriptions::*;

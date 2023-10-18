@@ -148,3 +148,63 @@ async fn request_with_missing_authorization_header_must_be_rejected() {
         r#"Basic realm="publish""#
     );
 }
+
+#[tokio::test]
+async fn non_existing_user_is_rejected() {
+    // Arrange
+    let app = spawn_app().await;
+
+    let username = uuid::Uuid::new_v4();
+    let password = uuid::Uuid::new_v4();
+
+    let response = reqwest::Client::new()
+        .post(format!("{}/newsletters", &app.address))
+        .basic_auth(username, Some(password))
+        .json(&serde_json::json!({
+            "title": "Newsletter",
+            "content": {
+                "text": "Newsletter",
+                "html": "Newsletter",
+            }
+        }))
+        .send()
+        .await
+        .expect("Failed to execute the request");
+
+    assert_eq!(401, response.status().as_u16());
+    assert_eq!(
+        r#"Basic realm="publish""#,
+        response.headers()["WWW-Authenticate"]
+    )
+}
+
+#[tokio::test]
+async fn user_with_wrong_password_is_rejected() {
+    // Arrange
+    let app = spawn_app().await;
+
+    let username = app.test_user.username;
+    let password = uuid::Uuid::new_v4();
+
+    assert_ne!(password.to_string(), app.test_user.password);
+
+    let response = reqwest::Client::new()
+        .post(format!("{}/newsletters", &app.address))
+        .basic_auth(username, Some(password))
+        .json(&serde_json::json!({
+            "title": "Newsletter",
+            "content": {
+                "text": "Newsletter",
+                "html": "Newsletter",
+            }
+        }))
+        .send()
+        .await
+        .expect("Failed to execute the request");
+
+    assert_eq!(401, response.status().as_u16());
+    assert_eq!(
+        r#"Basic realm="publish""#,
+        response.headers()["WWW-Authenticate"]
+    )
+}

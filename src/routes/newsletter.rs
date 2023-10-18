@@ -8,6 +8,7 @@ use anyhow::Context;
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use base64::{engine::general_purpose, Engine as _};
 use secrecy::{ExposeSecret, Secret};
+use sqlx::types::Uuid;
 use sqlx::PgPool;
 
 use crate::{domain::SubscriberEmail, email_client::EmailClient};
@@ -86,10 +87,36 @@ async fn validate_credential(
     credential: Credentials,
     pool: &PgPool,
 ) -> Result<sqlx::types::Uuid, PublishError> {
-    let (user_id, expected_password_hash) = get_stored_credentials(&credential.username, pool)
-        .await
-        .map_err(PublishError::UnexpectedError)?
-        .ok_or_else(|| PublishError::AuthError(anyhow::anyhow!("Unknown username")))?;
+    // Prevention from TIMEING ATTACK
+    //
+    // When username is valid but password is not valid the response time
+    // is significantly large then then both password and username is Invalid
+    // this difference in response time can be exploited to determine if username is
+    // present in the database, which in turn can be used for more sophisticated attach
+    // on that person.
+    //
+    // TO DEAL WITH IT
+    //
+    // We are going to let the flow of program to the end even if the username is invalid
+    // in the first place
+    // __________________________________________________________________________________
+    let mut user_id: Option<Uuid> = None;
+    // some random password hash
+    let mut expected_password_hash = Secret::new(
+        "$argon2id$v=19$m=15000,t=2,p=1$\
+                gZiV/M1gPc22ElAH/Jh1Hw$\
+                CWOrkoo7oJBQ/iyh7uJ0LO2aLEfrHwTWllSAxT0zRno"
+            .to_string(),
+    );
+
+    if let Some((stored_user_id, stored_hashed_password)) =
+        get_stored_credentials(&credential.username, pool)
+            .await
+            .map_err(PublishError::UnexpectedError)?
+    {
+        user_id = Some(stored_user_id);
+        expected_password_hash = stored_hashed_password;
+    }
 
     spawn_blocking_task_with_tracing(move || {
         verify_password_hash(expected_password_hash, credential.password)
@@ -99,7 +126,7 @@ async fn validate_credential(
     .map_err(PublishError::UnexpectedError)?
     .await?;
 
-    Ok(user_id)
+    user_id.ok_or_else(|| PublishError::AuthError(anyhow::anyhow!("Unknown Username.")))
 }
 
 #[tracing::instrument(
