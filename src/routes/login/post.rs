@@ -59,6 +59,7 @@ pub async fn login(
                 .insert_header((
                     LOCATION,
                     format!("/login?{}&tag={hmac_tag:x}", query_string),
+                    // {hmac_tag:x} means it is encoding it in base16 (hexadecimal) string
                 ))
                 .finish();
 

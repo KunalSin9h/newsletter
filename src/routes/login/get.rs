@@ -1,20 +1,50 @@
+use crate::startup::HmacSecret;
 use actix_web::{get, http::header::ContentType, web, HttpResponse};
+use hmac::{Hmac, Mac};
+use secrecy::ExposeSecret;
 
 #[derive(serde::Deserialize)]
 pub struct QueryParams {
-    error: Option<String>,
+    error: String,
+    tag: String, // base16 (hexadecimal) string
+}
+
+impl QueryParams {
+    fn verify(self, secret: &HmacSecret) -> Result<String, anyhow::Error> {
+        let tag = hex::decode(self.tag)?;
+        let query_string = format!("error={}", urlencoding::encode(&self.error));
+
+        let mut mac =
+            Hmac::<sha2::Sha256>::new_from_slice(secret.0.expose_secret().as_bytes()).unwrap();
+
+        mac.update(query_string.as_bytes());
+        mac.verify_slice(&tag)?;
+
+        Ok(self.error)
+    }
 }
 
 #[get("/login")]
-pub async fn login_form(query: web::Query<QueryParams>) -> HttpResponse {
-    let error_html = match query.0.error {
+pub async fn login_form(
+    query: Option<web::Query<QueryParams>>,
+    secret: web::Data<HmacSecret>,
+) -> HttpResponse {
+    let error_html = match query {
         None => "".into(),
-        Some(error_message) => format!(
-            "<p><i>{}</i></p>",
-            // PREVENTION FROM XSS (CROSS SITE SCRIPTING)
-            // OWASP Advises to HTML Entity Encode the UNTRUSTED DATA
-            htmlescape::encode_minimal(&error_message)
-        ),
+        Some(query) => match query.0.verify(&secret) {
+            Ok(error) => {
+                format!(
+                    "<p><i>{}</i></p>",
+                    // PREVENTION FROM XSS (CROSS SITE SCRIPTING)
+                    // OWASP Advises to HTML Entity Encode the UNTRUSTED DATA
+                    htmlescape::encode_minimal(&error)
+                )
+            }
+            Err(e) => {
+                tracing::warn!(error.message = %e, error.cause_chain = ?e, "Failed to verify query using HMAC tag");
+                "".into()
+            }
+        },
     };
 
     HttpResponse::Ok()
