@@ -12,7 +12,7 @@ pub async fn login_form(query: web::Query<QueryParams>) -> HttpResponse {
         Some(error_message) => format!(
             "<p><i>{}</i></p>",
             // PREVENTION FROM XSS (CROSS SITE SCRIPTING)
-            // OWASP Advise to HTML Entity Encode the UNTRUSTED DATA
+            // OWASP Advises to HTML Entity Encode the UNTRUSTED DATA
             htmlescape::encode_minimal(&error_message)
         ),
     };
