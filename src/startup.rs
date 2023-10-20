@@ -1,9 +1,11 @@
 use actix_web::dev::Server;
-use actix_web::{web, App, HttpServer};
+use actix_web::{web, web::Data, App, HttpServer};
+use secrecy::Secret;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{PgPool, Pool, Postgres};
 use std::net::TcpListener;
 use tracing_actix_web::TracingLogger;
+use uuid::Uuid;
 
 use crate::configuration::{DatabaseSettings, Settings};
 use crate::email_client::EmailClient;
@@ -15,6 +17,9 @@ pub struct Application {
     pub port: u16,
     pub server: Server,
 }
+
+#[derive(Clone)]
+pub struct HmacSecret(pub Secret<String>);
 
 impl Application {
     pub async fn build(configuration: Settings) -> Result<Self, std::io::Error> {
@@ -47,6 +52,7 @@ impl Application {
             connection_pool,
             email_client,
             configuration.application.base_url,
+            HmacSecret(Secret::new(Uuid::new_v4().to_string())),
         )?;
 
         Ok(Self { port, server })
@@ -66,11 +72,8 @@ pub fn run(
     db_pool: PgPool,
     email_client: EmailClient,
     base_url: String,
+    secret: HmacSecret,
 ) -> Result<Server, std::io::Error> {
-    let connection = web::Data::new(db_pool);
-    let email_client = web::Data::new(email_client);
-    let base_url = web::Data::new(base_url);
-
     let server = HttpServer::new(move || {
         App::new()
             .wrap(TracingLogger::default()) // Use this middleware
@@ -81,9 +84,10 @@ pub fn run(
             .service(home)
             .service(login::login_form)
             .service(login::login)
-            .app_data(connection.clone())
-            .app_data(email_client.clone())
-            .app_data(base_url.clone())
+            .app_data(Data::new(db_pool.clone()))
+            .app_data(Data::new(email_client.clone()))
+            .app_data(Data::new(base_url.clone()))
+            .app_data(Data::new(secret.clone()))
     })
     .listen(listener)?
     .run();
