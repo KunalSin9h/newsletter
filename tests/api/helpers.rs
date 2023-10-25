@@ -53,8 +53,8 @@ impl TestApp {
     }
 
     // POST /login
-    pub async fn post_login<Body>(&self, body: &Body) -> reqwest::Response 
-    where 
+    pub async fn post_login<Body>(&self, body: &Body) -> reqwest::Response
+    where
         Body: serde::Serialize,
     {
         self.api_client
@@ -170,7 +170,7 @@ pub async fn spawn_app() -> TestApp {
     let test_user = TestUser::new();
     test_user.store(&pg_pool).await;
 
-    let api_client = reqwest::Client::builder() 
+    let api_client = reqwest::Client::builder()
         .redirect(reqwest::redirect::Policy::none())
         .cookie_store(true)
         .build()
@@ -214,4 +214,3 @@ pub fn assert_redirect_to(response: &reqwest::Response, location: &str) {
     assert_eq!(response.status().as_u16(), 303);
     assert_eq!(response.headers().get("Location").unwrap(), location);
 }
-

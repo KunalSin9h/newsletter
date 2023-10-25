@@ -1,4 +1,9 @@
-use actix_web::{get, http::header::ContentType, HttpResponse, HttpRequest, cookie::{Cookie, time::Duration}};
+use actix_web::{
+    cookie::{time::Duration, Cookie},
+    get,
+    http::header::ContentType,
+    HttpRequest, HttpResponse,
+};
 
 #[get("/login")]
 pub async fn login_form(request: HttpRequest) -> HttpResponse {

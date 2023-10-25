@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::helpers::{spawn_app, assert_redirect_to};
+use crate::helpers::{assert_redirect_to, spawn_app};
 
 #[tokio::test]
 async fn an_error_flash_message_is_set_on_failure() {
@@ -9,7 +9,7 @@ async fn an_error_flash_message_is_set_on_failure() {
     let mut form_data = HashMap::new();
     form_data.insert("username", "random-username");
     form_data.insert("password", "random-password");
-    
+
     let response = app.post_login(&form_data).await;
 
     let flash_cookie = response.cookies().find(|c| c.name() == "_flash").unwrap();
