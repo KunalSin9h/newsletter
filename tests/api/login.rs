@@ -1,0 +1,28 @@
+use std::collections::HashMap;
+
+use crate::helpers::{spawn_app, assert_redirect_to};
+
+#[tokio::test]
+async fn an_error_flash_message_is_set_on_failure() {
+    let app = spawn_app().await;
+
+    let mut form_data = HashMap::new();
+    form_data.insert("username", "random-username");
+    form_data.insert("password", "random-password");
+    
+    let response = app.post_login(&form_data).await;
+
+    let flash_cookie = response.cookies().find(|c| c.name() == "_flash").unwrap();
+
+    assert_redirect_to(&response, "/login");
+    assert_eq!(flash_cookie.value(), "Authentication failed");
+
+    let response_html = app.get_login_html().await;
+    assert!(response_html.contains(r#"<p><i>Authentication failed</i></p>"#)); // True
+
+    // Reload the page
+    // i.e requesting to same /login, this time the cookie must
+    // be vanished
+    let response_html = app.get_login_html().await;
+    assert!(!response_html.contains(r#"<p><i>Authentication failed</i></p>"#)); // False
+}

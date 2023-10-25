@@ -17,6 +17,7 @@ pub struct TestApp {
     pub db_pool: PgPool,
     pub email_server: MockServer,
     pub test_user: TestUser,
+    pub api_client: reqwest::Client,
 }
 
 pub struct TestUser {
@@ -32,7 +33,7 @@ pub struct ConfirmationLink {
 
 impl TestApp {
     pub async fn post_subscriptions(&self, body: String) -> reqwest::Response {
-        reqwest::Client::new()
+        self.api_client
             .post(&format!("{}/subscription", &self.address))
             .header("Content-Type", "application/x-www-form-urlencoded")
             .body(body)
@@ -42,13 +43,37 @@ impl TestApp {
     }
 
     pub async fn post_newsletter(&self, body: serde_json::Value) -> reqwest::Response {
-        reqwest::Client::new()
+        self.api_client
             .post(format!("{}/newsletters", &self.address))
             .basic_auth(&self.test_user.username, Some(&self.test_user.password))
             .json(&body)
             .send()
             .await
             .expect("failed to send newsletter")
+    }
+
+    // POST /login
+    pub async fn post_login<Body>(&self, body: &Body) -> reqwest::Response 
+    where 
+        Body: serde::Serialize,
+    {
+        self.api_client
+            .post(format!("{}/login", self.address))
+            .form(body)
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
+
+    pub async fn get_login_html(&self) -> String {
+        self.api_client
+            .get(&format!("{}/login", &self.address))
+            .send()
+            .await
+            .expect("failed to execute request.")
+            .text()
+            .await
+            .unwrap()
     }
 
     pub async fn get_confirmation_url(
@@ -145,12 +170,19 @@ pub async fn spawn_app() -> TestApp {
     let test_user = TestUser::new();
     test_user.store(&pg_pool).await;
 
+    let api_client = reqwest::Client::builder() 
+        .redirect(reqwest::redirect::Policy::none())
+        .cookie_store(true)
+        .build()
+        .unwrap();
+
     TestApp {
         address,
         port,
         db_pool: pg_pool,
         email_server,
         test_user,
+        api_client,
     }
 }
 
@@ -177,3 +209,9 @@ async fn configure_database(config: &DatabaseSettings) -> PgPool {
 
     connection_pool
 }
+
+pub fn assert_redirect_to(response: &reqwest::Response, location: &str) {
+    assert_eq!(response.status().as_u16(), 303);
+    assert_eq!(response.headers().get("Location").unwrap(), location);
+}
+
