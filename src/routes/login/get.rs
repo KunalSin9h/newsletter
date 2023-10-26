@@ -1,22 +1,20 @@
 use actix_web::{
-    cookie::{time::Duration, Cookie},
     get,
     http::header::ContentType,
-    HttpRequest, HttpResponse,
+    HttpResponse,
 };
+use actix_web_flash_messages::{IncomingFlashMessages, Level};
 
 #[get("/login")]
-pub async fn login_form(request: HttpRequest) -> HttpResponse {
-    let error_html = match request.cookie("_flash") {
-        None => "".into(),
-        Some(cookie) => {
-            format!("<p><i>{}</i></p>", cookie.value())
-        }
-    };
+pub async fn login_form(flash_message: IncomingFlashMessages) -> HttpResponse {
+    let mut error_html = String::new();
+
+    for m in flash_message.iter().filter(|m| m.level() == Level::Error) {
+        error_html.push_str(format!("<p><i>{}</i></p>\n", m.content()).as_str());
+    }
 
     HttpResponse::Ok()
         .content_type(ContentType::html())
-        .cookie(Cookie::build("_flash", "").max_age(Duration::ZERO).finish())
         .body(get_login_html(error_html))
 }
 

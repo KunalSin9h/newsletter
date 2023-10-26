@@ -18,6 +18,7 @@ pub struct ApplicationSettings {
     pub port: u16,
     pub host: String,
     pub base_url: String,
+    pub hmac_secret: Secret<String>
 }
 
 #[derive(serde::Deserialize, Clone)]
@@ -29,6 +30,14 @@ pub struct DatabaseSettings {
     pub port: u16,
     pub database_name: String,
     pub require_ssl: bool,
+}
+
+#[derive(serde::Deserialize, Clone)]
+pub struct EmailClientSettings {
+    pub base_url: String,
+    pub sender_email: String,
+    pub authorization_token: Secret<String>,
+    pub timeout_millisecond: u64,
 }
 
 impl DatabaseSettings {
@@ -54,13 +63,6 @@ impl DatabaseSettings {
     }
 }
 
-#[derive(serde::Deserialize, Clone)]
-pub struct EmailClientSettings {
-    pub base_url: String,
-    pub sender_email: String,
-    pub authorization_token: Secret<String>,
-    pub timeout_millisecond: u64,
-}
 
 impl EmailClientSettings {
     pub fn sender(&self) -> Result<SubscriberEmail, String> {
@@ -93,8 +95,8 @@ pub fn get_configuration() -> Result<Settings, config::ConfigError> {
     settings
         .merge(config::File::from(configuration_directory.join(env.as_str())).required(true))?;
 
-    // APP_DATABASE__REQUIRED_SSL = Settings.database.require_ssl
-    settings.merge(config::Environment::with_prefix("app").separator("__"))?;
+    // SETTINGS_DATABASE__REQUIRED_SSL = Settings.database.require_ssl
+    settings.merge(config::Environment::with_prefix("settings").separator("__"))?;
 
     // convert the configuration values it read into settings type
     settings.try_into()

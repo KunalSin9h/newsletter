@@ -1,9 +1,16 @@
 application:
   host: "127.0.0.1"
   base_url: "http://127.0.0.1"
+  hmac_secret: "aGF2ZSBhIHNlY3JldCB3aGljaCBpcyBtb3JlIHRoZW4gMjAgY2hhcmFjdGVycyBsb25nLCBpIGhvcGUgdGhpcyBpcyBnb29kIGluIGxlbmdodAo="
+
 database:
+  host: "localhost"
+  username: "postgres"
+  password: "password"
   require_ssl: false
+
 email_client:
   base_url: "http://domain.com/"
   sender_email: "test@email.com"
   authorization_token: "token"
+  timeout_millisecond: 1000

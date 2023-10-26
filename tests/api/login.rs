@@ -12,10 +12,7 @@ async fn an_error_flash_message_is_set_on_failure() {
 
     let response = app.post_login(&form_data).await;
 
-    let flash_cookie = response.cookies().find(|c| c.name() == "_flash").unwrap();
-
     assert_redirect_to(&response, "/login");
-    assert_eq!(flash_cookie.value(), "Authentication failed");
 
     let response_html = app.get_login_html().await;
     assert!(response_html.contains(r#"<p><i>Authentication failed</i></p>"#)); // True
