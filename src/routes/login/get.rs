@@ -1,8 +1,4 @@
-use actix_web::{
-    get,
-    http::header::ContentType,
-    HttpResponse,
-};
+use actix_web::{get, http::header::ContentType, HttpResponse};
 use actix_web_flash_messages::{IncomingFlashMessages, Level};
 
 #[get("/login")]

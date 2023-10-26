@@ -1,18 +1,18 @@
-use actix_web::cookie::Key;
-use actix_web::dev::Server;
-use actix_web::{web, web::Data, App, HttpServer};
-use actix_web_flash_messages::FlashMessagesFramework;
-use actix_web_flash_messages::storage::CookieMessageStore;
-use secrecy::{Secret, ExposeSecret};
-use sqlx::postgres::PgPoolOptions;
-use sqlx::{PgPool, Pool, Postgres};
-use std::net::TcpListener;
-use tracing_actix_web::TracingLogger;
 use crate::configuration::{DatabaseSettings, Settings};
 use crate::email_client::EmailClient;
 use crate::routes::home;
 use crate::routes::login;
 use crate::routes::{confirm, health_check, publish_newsletter, subscribe};
+use actix_web::cookie::Key;
+use actix_web::dev::Server;
+use actix_web::{web, web::Data, App, HttpServer};
+use actix_web_flash_messages::storage::CookieMessageStore;
+use actix_web_flash_messages::FlashMessagesFramework;
+use secrecy::{ExposeSecret, Secret};
+use sqlx::postgres::PgPoolOptions;
+use sqlx::{PgPool, Pool, Postgres};
+use std::net::TcpListener;
+use tracing_actix_web::TracingLogger;
 
 pub struct Application {
     pub port: u16,
@@ -53,7 +53,7 @@ impl Application {
             connection_pool,
             email_client,
             configuration.application.base_url,
-            HmacSecret(configuration.application.hmac_secret)
+            HmacSecret(configuration.application.hmac_secret),
         )?;
 
         Ok(Self { port, server })
@@ -75,10 +75,11 @@ pub fn run(
     base_url: String,
     hmac_secret: HmacSecret,
 ) -> Result<Server, std::io::Error> {
-
-    let message_framework = { 
-        let message_store = CookieMessageStore::builder(Key::from(hmac_secret.0.expose_secret().as_bytes())).build();
-        FlashMessagesFramework::builder(message_store).build() 
+    let message_framework = {
+        let message_store =
+            CookieMessageStore::builder(Key::from(hmac_secret.0.expose_secret().as_bytes()))
+                .build();
+        FlashMessagesFramework::builder(message_store).build()
     };
 
     let server = HttpServer::new(move || {
