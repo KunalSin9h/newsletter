@@ -1,10 +1,10 @@
 use crate::configuration::{DatabaseSettings, Settings};
 use crate::email_client::EmailClient;
-use crate::routes::{home, admin};
 use crate::routes::login;
+use crate::routes::{admin, home};
 use crate::routes::{confirm, health_check, publish_newsletter, subscribe};
-use actix_session::SessionMiddleware;
 use actix_session::storage::RedisSessionStore;
+use actix_session::SessionMiddleware;
 use actix_web::cookie::Key;
 use actix_web::dev::Server;
 use actix_web::{web, web::Data, App, HttpServer};
@@ -57,7 +57,8 @@ impl Application {
             configuration.application.base_url,
             HmacSecret(configuration.application.hmac_secret),
             configuration.redis_uri,
-        ).await?;
+        )
+        .await?;
 
         Ok(Self { port, server })
     }
@@ -83,9 +84,7 @@ pub async fn run(
     let redis_store = RedisSessionStore::new(redis_uri.expose_secret()).await?;
 
     let message_framework = {
-        let message_store =
-            CookieMessageStore::builder(secret_key.clone())
-                .build();
+        let message_store = CookieMessageStore::builder(secret_key.clone()).build();
         FlashMessagesFramework::builder(message_store).build()
     };
 
@@ -93,7 +92,10 @@ pub async fn run(
         App::new()
             .wrap(TracingLogger::default()) // Use this middleware
             .wrap(message_framework.clone())
-            .wrap(SessionMiddleware::new(redis_store.clone(), secret_key.clone()))
+            .wrap(SessionMiddleware::new(
+                redis_store.clone(),
+                secret_key.clone(),
+            ))
             .route("/health_check", web::get().to(health_check))
             .route("/subscription", web::post().to(subscribe))
             .route("/subscription/confirm", web::get().to(confirm))

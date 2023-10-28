@@ -1,4 +1,4 @@
-use crate::helpers::{spawn_app, assert_redirect_to};
+use crate::helpers::{assert_redirect_to, spawn_app};
 
 #[tokio::test]
 async fn unauthenticated_users_redirected_to_login() {

@@ -1,6 +1,6 @@
-use std::future::{Ready, ready};
+use std::future::{ready, Ready};
 
-use actix_session::{Session, SessionExt, SessionInsertError, SessionGetError};
+use actix_session::{Session, SessionExt, SessionGetError, SessionInsertError};
 use actix_web::{FromRequest, HttpRequest};
 
 pub struct TypedSession(Session);
@@ -9,7 +9,7 @@ impl TypedSession {
     const USER_ID_KEY: &'static str = "user_id";
 
     pub fn renew(&self) {
-        self.0.renew(); 
+        self.0.renew();
     }
 
     pub fn insert_user_id(&self, user_id: uuid::Uuid) -> Result<(), SessionInsertError> {
@@ -24,7 +24,7 @@ impl TypedSession {
 // Anyone that implements FromRequest is called Extractor
 // and we are making TypedSession an extractor
 impl FromRequest for TypedSession {
-    // We return the same error as returned 
+    // We return the same error as returned
     // by the implementation of 'impl FromRequest for Session'
     type Error = <Session as FromRequest>::Error;
 
