@@ -32,6 +32,8 @@ argon2 = {version = "0.5.2", features = ["std"]}
 urlencoding = "2.1.3"
 htmlescape = "0.3.1"
 actix-web-flash-messages = { version = "0.4", features = ["cookies"] }
+actix-session = { version = "0.8.0", features = ["redis-rs-tls-session"] }
+uuid = { version = "1.5.0", features = ["v4", "serde", "fast-rng"] }
 
 [dev-dependencies]
 linkify = "0.8"
@@ -47,12 +49,4 @@ features = [
   "chrono",
   "migrate",
   "offline"
-]
-
-[dependencies.uuid]
-version = "1.4.1"
-features = [
-    "v4",                # Lets you generate random UUIDs
-    "fast-rng",          # Use a faster (but still sufficiently random) RNG
-    "macro-diagnostics", # Enable better diagnostics for compile-time UUIDs
 ]

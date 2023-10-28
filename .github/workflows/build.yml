@@ -1,5 +1,5 @@
-name: CD
-run-name: "CD: ${{ github.event.pull_request.title || 'on master' }}"
+name: Image Build
+run-name: "${{ github.event.pull_request.title || 'on master' }}"
 
 on:
   push:

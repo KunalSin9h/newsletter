@@ -65,9 +65,22 @@ impl TestApp {
             .expect("Failed to execute request.")
     }
 
+    // GET /login
     pub async fn get_login_html(&self) -> String {
         self.api_client
             .get(&format!("{}/login", &self.address))
+            .send()
+            .await
+            .expect("failed to execute request.")
+            .text()
+            .await
+            .unwrap()
+    }
+
+    // GET /admin/dashboard
+    pub async fn get_admin_dashboard_html(&self) -> String {
+        self.api_client
+            .get(&format!("{}/admin/dashboard", &self.address))
             .send()
             .await
             .expect("failed to execute request.")

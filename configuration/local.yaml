@@ -1,3 +1,5 @@
+redis_uri: "redis://127.0.0.1:6379"
+
 application:
   host: "127.0.0.1"
   base_url: "http://127.0.0.1"

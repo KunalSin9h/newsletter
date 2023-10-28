@@ -2,7 +2,7 @@ use crate::telemetry::spawn_blocking_task_with_tracing;
 use anyhow::Context;
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use secrecy::{ExposeSecret, Secret};
-use sqlx::{types::Uuid, PgPool};
+use sqlx::PgPool;
 
 #[derive(thiserror::Error, Debug)]
 pub enum AuthError {
@@ -21,8 +21,8 @@ pub struct Credentials {
 pub async fn validate_credential(
     credential: Credentials,
     pool: &PgPool,
-) -> Result<sqlx::types::Uuid, AuthError> {
-    // Prevention from TIMEING ATTACK
+) -> Result<uuid::Uuid, AuthError> {
+    // Prevention from TIMING ATTACK
     //
     // When username is valid but password is not valid the response time
     // is significantly large then then both password and username is Invalid
@@ -35,7 +35,7 @@ pub async fn validate_credential(
     // We are going to let the flow of program to the end even if the username is invalid
     // in the first place
     // __________________________________________________________________________________
-    let mut user_id: Option<Uuid> = None;
+    let mut user_id: Option<uuid::Uuid> = None;
     // some random password hash
     let mut expected_password_hash = Secret::new(
         "$argon2id$v=19$m=15000,t=2,p=1$\
@@ -49,7 +49,7 @@ pub async fn validate_credential(
             .await
             .map_err(AuthError::UnexpectedError)?
     {
-        user_id = Some(stored_user_id);
+        user_id = Some(uuid::Uuid::from_bytes(*stored_user_id.as_bytes()));
         expected_password_hash = stored_hashed_password;
     }
 
@@ -60,12 +60,6 @@ pub async fn validate_credential(
     .context("Failed to spawn blocking task.")
     .map_err(AuthError::UnexpectedError)?
     .await?;
-
-    // .map_err(AuthError::UnexpectedError)?
-    // .await?;
-    // .map_err(AuthError::InvalidCredentials)?
-    // .context("Failed to spawn blocking task.")
-    // .await?;
 
     user_id.ok_or_else(|| AuthError::InvalidCredentials(anyhow::anyhow!("Unknown Username.")))
 }

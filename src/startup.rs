@@ -1,8 +1,10 @@
 use crate::configuration::{DatabaseSettings, Settings};
 use crate::email_client::EmailClient;
-use crate::routes::home;
+use crate::routes::{home, admin};
 use crate::routes::login;
 use crate::routes::{confirm, health_check, publish_newsletter, subscribe};
+use actix_session::SessionMiddleware;
+use actix_session::storage::RedisSessionStore;
 use actix_web::cookie::Key;
 use actix_web::dev::Server;
 use actix_web::{web, web::Data, App, HttpServer};
@@ -23,7 +25,7 @@ pub struct Application {
 pub struct HmacSecret(pub Secret<String>);
 
 impl Application {
-    pub async fn build(configuration: Settings) -> Result<Self, std::io::Error> {
+    pub async fn build(configuration: Settings) -> Result<Self, anyhow::Error> {
         let connection_pool = get_configuration_pool(&configuration.database);
 
         let sender = configuration
@@ -54,7 +56,8 @@ impl Application {
             email_client,
             configuration.application.base_url,
             HmacSecret(configuration.application.hmac_secret),
-        )?;
+            configuration.redis_uri,
+        ).await?;
 
         Ok(Self { port, server })
     }
@@ -68,16 +71,20 @@ impl Application {
     }
 }
 
-pub fn run(
+pub async fn run(
     listener: TcpListener,
     db_pool: PgPool,
     email_client: EmailClient,
     base_url: String,
     hmac_secret: HmacSecret,
-) -> Result<Server, std::io::Error> {
+    redis_uri: Secret<String>,
+) -> Result<Server, anyhow::Error> {
+    let secret_key = Key::from(hmac_secret.0.expose_secret().as_bytes());
+    let redis_store = RedisSessionStore::new(redis_uri.expose_secret()).await?;
+
     let message_framework = {
         let message_store =
-            CookieMessageStore::builder(Key::from(hmac_secret.0.expose_secret().as_bytes()))
+            CookieMessageStore::builder(secret_key.clone())
                 .build();
         FlashMessagesFramework::builder(message_store).build()
     };
@@ -86,6 +93,7 @@ pub fn run(
         App::new()
             .wrap(TracingLogger::default()) // Use this middleware
             .wrap(message_framework.clone())
+            .wrap(SessionMiddleware::new(redis_store.clone(), secret_key.clone()))
             .route("/health_check", web::get().to(health_check))
             .route("/subscription", web::post().to(subscribe))
             .route("/subscription/confirm", web::get().to(confirm))
@@ -93,6 +101,7 @@ pub fn run(
             .service(home)
             .service(login::login_form)
             .service(login::login)
+            .service(admin::admin_dashboard)
             .app_data(Data::new(db_pool.clone()))
             .app_data(Data::new(email_client.clone()))
             .app_data(Data::new(base_url.clone()))
