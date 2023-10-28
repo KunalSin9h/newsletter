@@ -30,6 +30,26 @@
     },
     "query": "\n            SELECT email\n            FROM subscriptions \n            WHERE status = 'confirmed' \n        "
   },
+  "201d13a10208b4f78a2d0fece4be6f815b6ee3d55d6cfdac07483754593a1448": {
+    "describe": {
+      "columns": [
+        {
+          "name": "username",
+          "ordinal": 0,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n            SELECT username\n            FROM users\n            WHERE user_id = $1\n        "
+  },
   "8331e19e367a63b0c2112d1d8c048dd1a5f0eaa49d265d407a6ffd9469f127ce": {
     "describe": {
       "columns": [],
