@@ -84,3 +84,45 @@ async fn current_password_should_be_valid() {
 
     assert!(html_page.contains("The current password is incorrect."));
 }
+
+#[tokio::test]
+async fn change_password_works() {
+    let app = spawn_app().await;
+    let new_password = uuid::Uuid::new_v4().to_string();
+
+    let response = app
+        .post_login(&serde_json::json!({
+            "username": &app.test_user.username,
+            "password": &app.test_user.password,
+        }))
+        .await;
+
+    assert_redirect_to(&response, "/admin/dashboard");
+
+    let response = app
+        .post_change_password(&serde_json::json!({
+            "current_password": &app.test_user.password,
+            "new_password": &new_password,
+            "new_password_check": &new_password,
+        }))
+        .await;
+
+    assert_redirect_to(&response, "/admin/password");
+
+    let html = app.get_change_password_html().await;
+    assert!(html.contains("Your password has been changed."));
+
+    let response = app.post_logout().await;
+    assert_redirect_to(&response, "/login");
+
+    let login_page_html = app.get_login_html().await;
+    assert!(login_page_html.contains(r#"You have successfully logged out."#));
+
+    let response = app
+        .post_login(&serde_json::json!({
+            "username": &app.test_user.username,
+            "password": &new_password,
+        }))
+        .await;
+    assert_redirect_to(&response, "/admin/dashboard");
+}
