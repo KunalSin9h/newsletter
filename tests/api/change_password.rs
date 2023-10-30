@@ -1,4 +1,4 @@
-use std::{collections::HashMap, hash::Hash};
+use std::collections::HashMap;
 
 use crate::helpers::{assert_redirect_to, spawn_app};
 
@@ -52,7 +52,35 @@ async fn new_password_fields_password_must_match() {
 
     let html_page = app.get_change_password_html().await;
 
-    assert!(html_page.contains(
-        "<p><i>You entered two different new passwords - the field values must match.</i></p>"
-    ));
+    assert!(html_page
+        .contains("You entered two different new passwords - the field values must match."));
+}
+
+#[tokio::test]
+async fn current_password_should_be_valid() {
+    let app = spawn_app().await;
+
+    let mut login_request_payload = HashMap::new();
+    login_request_payload.insert("username", &app.test_user.username);
+    login_request_payload.insert("password", &app.test_user.password);
+
+    app.post_login(&login_request_payload).await;
+
+    let new_password = uuid::Uuid::new_v4().to_string();
+    let wrong_password = uuid::Uuid::new_v4().to_string();
+
+    let mut change_password_request_payload = HashMap::new();
+    change_password_request_payload.insert("current_password", &wrong_password);
+    change_password_request_payload.insert("new_password", &new_password);
+    change_password_request_payload.insert("new_password_check", &new_password);
+
+    let response = app
+        .post_change_password(&change_password_request_payload)
+        .await;
+
+    assert_redirect_to(&response, "/admin/password");
+
+    let html_page = app.get_change_password_html().await;
+
+    assert!(html_page.contains("The current password is incorrect."));
 }

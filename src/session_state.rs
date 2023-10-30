@@ -19,6 +19,10 @@ impl TypedSession {
     pub fn get_user_id(&self) -> Result<Option<uuid::Uuid>, SessionGetError> {
         self.0.get(Self::USER_ID_KEY)
     }
+
+    pub fn log_out(&self) {
+        self.0.purge();
+    }
 }
 
 // Anyone that implements FromRequest is called Extractor

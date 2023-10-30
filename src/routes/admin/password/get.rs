@@ -1,5 +1,5 @@
 use actix_web::{get, http::header::ContentType, HttpResponse};
-use actix_web_flash_messages::IncomingFlashMessages;
+use actix_web_flash_messages::{IncomingFlashMessages, Level};
 
 use crate::session_state::TypedSession;
 use crate::utils::{e500, see_other};
@@ -15,7 +15,12 @@ pub async fn change_password_form(
 
     let mut message_str = String::new();
     for m in flash_message.iter() {
-        message_str.push_str(format!("<p><i>{}</i></p>", m.content()).as_str());
+        let mut class = "error";
+        if m.level() == Level::Info {
+            class = "info"
+        }
+
+        message_str.push_str(format!("<p class='{}'><i>{}</i></p>", class, m.content()).as_str());
     }
 
     Ok(HttpResponse::Ok()
@@ -35,10 +40,14 @@ fn get_change_password_html(message: String) -> String {
                     color: red;
                     font-weight: bold;
                 }}
+                .info {{
+                    color: green;
+                    font-weight: bold;
+                }}
             </style>
         </head>
         <body>
-            <span class="error">{message}</span>
+            {message}
             <form action="/admin/password" method="post">
                 <label>Current password
                     <input

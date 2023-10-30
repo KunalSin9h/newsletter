@@ -3,15 +3,20 @@ use actix_web_flash_messages::{IncomingFlashMessages, Level};
 
 #[get("/login")]
 pub async fn login_form(flash_message: IncomingFlashMessages) -> HttpResponse {
-    let mut error_html = String::new();
+    let mut message_str = String::new();
 
-    for m in flash_message.iter().filter(|m| m.level() == Level::Error) {
-        error_html.push_str(format!("<p><i>{}</i></p>\n", m.content()).as_str());
+    for m in flash_message.iter() {
+        let mut class = "error";
+        if m.level() == Level::Info {
+            class = "info"
+        }
+
+        message_str.push_str(format!("<p class='{}'><i>{}</i></p>", class, m.content()).as_str());
     }
 
     HttpResponse::Ok()
         .content_type(ContentType::html())
-        .body(get_login_html(error_html))
+        .body(get_login_html(message_str))
 }
 
 fn get_login_html(error_message: String) -> String {
@@ -27,10 +32,14 @@ fn get_login_html(error_message: String) -> String {
                     color: red;
                     font-weight: bold;
                 }}
+                .info {{
+                    color: green;
+                    font-weight: bold;
+                }}
             </style>
         </head>
         <body>
-            <span class="error">{error_message}</span>
+            {error_message}
             <form action="/login" method="post">
                 <label>Username
                     <input
