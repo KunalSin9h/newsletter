@@ -90,6 +90,35 @@ impl TestApp {
         self.get_admin_dashboard().await.text().await.unwrap()
     }
 
+    pub async fn get_change_password(&self) -> reqwest::Response {
+        self.api_client
+            .get(&format!("{}/admin/password", &self.address))
+            .send()
+            .await
+            .expect("failed to execute request.")
+    }
+
+    pub async fn get_change_password_html(&self) -> String {
+        self.get_change_password()
+            .await
+            .text()
+            .await
+            .expect("failed to get change password html")
+    }
+
+    // POST /admin/password
+    pub async fn post_change_password<Body>(&self, body: &Body) -> reqwest::Response
+    where
+        Body: serde::Serialize,
+    {
+        self.api_client
+            .post(format!("{}/admin/password", self.address))
+            .form(body)
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
+
     pub async fn get_confirmation_url(
         &self,
         email_request: &wiremock::Request,

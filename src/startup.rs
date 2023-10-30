@@ -104,6 +104,8 @@ pub async fn run(
             .service(login::login_form)
             .service(login::login)
             .service(admin::admin_dashboard)
+            .service(admin::change_password_form)
+            .service(admin::change_password)
             .app_data(Data::new(db_pool.clone()))
             .app_data(Data::new(email_client.clone()))
             .app_data(Data::new(base_url.clone()))
