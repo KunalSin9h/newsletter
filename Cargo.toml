@@ -34,6 +34,7 @@ htmlescape = "0.3.1"
 actix-web-flash-messages = { version = "0.4", features = ["cookies"] }
 actix-session = { version = "0.8.0", features = ["redis-rs-tls-session"] }
 uuid = { version = "1.5.0", features = ["v4", "serde", "fast-rng"] }
+actix-web-lab = "0.20.0"
 
 [dev-dependencies]
 linkify = "0.8"

@@ -1,18 +1,10 @@
 use actix_web::{get, http::header::ContentType, HttpResponse};
 use actix_web_flash_messages::{IncomingFlashMessages, Level};
 
-use crate::session_state::TypedSession;
-use crate::utils::{e500, see_other};
-
 #[get("/admin/password")]
 pub async fn change_password_form(
-    session: TypedSession,
     flash_message: IncomingFlashMessages,
 ) -> Result<HttpResponse, actix_web::Error> {
-    if session.get_user_id().map_err(e500)?.is_none() {
-        return Ok(see_other("/login"));
-    }
-
     let mut message_str = String::new();
     for m in flash_message.iter() {
         let mut class = "error";

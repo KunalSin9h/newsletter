@@ -1,3 +1,4 @@
+use crate::authentication::reject_anonymous_user;
 use crate::configuration::{DatabaseSettings, Settings};
 use crate::email_client::EmailClient;
 use crate::routes::login;
@@ -10,6 +11,7 @@ use actix_web::dev::Server;
 use actix_web::{web, web::Data, App, HttpServer};
 use actix_web_flash_messages::storage::CookieMessageStore;
 use actix_web_flash_messages::FlashMessagesFramework;
+use actix_web_lab::middleware::from_fn;
 use secrecy::{ExposeSecret, Secret};
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{PgPool, Pool, Postgres};
@@ -103,10 +105,14 @@ pub async fn run(
             .service(home)
             .service(login::login_form)
             .service(login::login)
-            .service(admin::admin_dashboard)
-            .service(admin::change_password_form)
-            .service(admin::change_password)
-            .service(admin::admin_logout)
+            .service(
+                web::scope("/admin")
+                    .wrap(from_fn(reject_anonymous_user)) // Auth middleware
+                    .service(admin::admin_dashboard)
+                    .service(admin::change_password_form)
+                    .service(admin::change_password)
+                    .service(admin::admin_logout),
+            )
             .app_data(Data::new(db_pool.clone()))
             .app_data(Data::new(email_client.clone()))
             .app_data(Data::new(base_url.clone()))

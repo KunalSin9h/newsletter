@@ -4,9 +4,8 @@ use secrecy::{ExposeSecret, Secret};
 use sqlx::PgPool;
 
 use crate::{
-    authentication::{self, validate_credential, AuthError, Credentials},
+    authentication::{self, validate_credential, AuthError, Credentials, UserID},
     routes::get_username,
-    session_state::TypedSession,
     utils::{e500, see_other},
 };
 
@@ -20,14 +19,10 @@ pub struct FormData {
 #[post("/admin/password")]
 pub async fn change_password(
     form: web::Form<FormData>,
-    session: TypedSession,
     pool: web::Data<PgPool>,
+    user_id: web::ReqData<UserID>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let user_id = if let Some(user_id) = session.get_user_id().map_err(e500)? {
-        user_id
-    } else {
-        return Ok(see_other("/login"));
-    };
+    let user_id = user_id.into_inner();
 
     if form.new_password.expose_secret() != form.new_password_check.expose_secret() {
         FlashMessage::error(
@@ -37,7 +32,7 @@ pub async fn change_password(
         return Ok(see_other("/admin/password"));
     }
 
-    let username = get_username(user_id, &pool).await.map_err(e500)?;
+    let username = get_username(*user_id, &pool).await.map_err(e500)?;
 
     let credential = Credentials {
         username,
@@ -50,19 +45,19 @@ pub async fn change_password(
                 FlashMessage::error("The current password is incorrect.").send();
                 Ok(see_other("/admin/password"))
             }
-            AuthError::UnexpectedError(_) => Err(e500(e).into()),
+            AuthError::UnexpectedError(_) => Err(e500(e)),
         };
     }
 
     let new_password_length = form.0.new_password.expose_secret().len();
 
-    if new_password_length < 12 || new_password_length > 128 {
+    if !(12..=128).contains(&new_password_length) {
         FlashMessage::error("New password is invalid, it should be between 12 and 128 characters.")
             .send();
         return Ok(see_other("/admin/password"));
     }
 
-    authentication::change_password(user_id, form.0.new_password, &pool)
+    authentication::change_password(*user_id, form.0.new_password, &pool)
         .await
         .map_err(e500)?;
 
