@@ -19,13 +19,11 @@ async fn newsletter_is_not_delivered_to_unconfirmed_subscribers() {
     // Send a newsletter,
     let newsletter_request_payload = serde_json::json!({
         "title": "Title of Newsletter",
-        "content": {
-            "text": "Newsletter plain body",
-            "html": "<h1>Newsletter html body</h1>",
-        }
+        "text": "Newsletter plain body",
+        "html": "<h1>Newsletter html body</h1>",
     });
 
-    let response = app.post_newsletter(newsletter_request_payload).await;
+    let response = app.post_newsletter(&newsletter_request_payload).await;
 
     assert_eq!(response.status().as_u16(), 200);
 }
@@ -44,13 +42,11 @@ async fn newsletter_is_delivered_to_confirmed_subscribers() {
 
     let newsletter_request_payload = serde_json::json!({
         "title": "Title of Newsletter",
-        "content": {
-            "text": "Newsletter plain body",
-            "html": "<h1>Newsletter html body</h1>",
-        }
+        "text": "Newsletter plain body",
+        "html": "<h1>Newsletter html body</h1>",
     });
 
-    let response = app.post_newsletter(newsletter_request_payload).await;
+    let response = app.post_newsletter(&newsletter_request_payload).await;
 
     assert_eq!(response.status().as_u16(), 200);
 }
@@ -98,10 +94,8 @@ async fn publish_newsletter_return_400_for_invalid_body() {
     let test_case = vec![
         (
             serde_json::json!({
-                "content": {
-                    "text": "",
-                    "html": "",
-                }
+                "text": "",
+                "html": "",
             }),
             "missing title",
         ),
@@ -114,7 +108,7 @@ async fn publish_newsletter_return_400_for_invalid_body() {
     ];
 
     for (content, message) in test_case {
-        let res = app.post_newsletter(content).await;
+        let res = app.post_newsletter(&content).await;
 
         assert_eq!(
             res.status().as_u16(),
@@ -130,23 +124,17 @@ async fn request_with_missing_authorization_header_must_be_rejected() {
     let app = spawn_app().await;
 
     let response = reqwest::Client::new()
-        .post(format!("{}/newsletters", &app.address))
-        .json(&serde_json::json!({
+        .post(format!("{}/admin/newsletters", &app.address))
+        .form(&serde_json::json!({
             "title": "Newsletter Title",
-            "content": {
-                "text": "Text content",
-                "html": "<h1>Html content</h1>",
-            }
+            "text": "Text content",
+            "html": "<h1>Html content</h1>",
         }))
         .send()
         .await
         .expect("failed to exec request");
 
     assert_eq!(response.status().as_u16(), 401);
-    assert_eq!(
-        response.headers()["WWW-Authenticate"],
-        r#"Basic realm="publish""#
-    );
 }
 
 #[tokio::test]
@@ -154,28 +142,18 @@ async fn non_existing_user_is_rejected() {
     // Arrange
     let app = spawn_app().await;
 
-    let username = uuid::Uuid::new_v4();
-    let password = uuid::Uuid::new_v4();
-
     let response = reqwest::Client::new()
-        .post(format!("{}/newsletters", &app.address))
-        .basic_auth(username, Some(password))
-        .json(&serde_json::json!({
+        .post(format!("{}/admin/newsletters", &app.address))
+        .form(&serde_json::json!({
             "title": "Newsletter",
-            "content": {
-                "text": "Newsletter",
-                "html": "Newsletter",
-            }
+            "text": "Newsletter",
+            "html": "Newsletter",
         }))
         .send()
         .await
         .expect("Failed to execute the request");
 
     assert_eq!(401, response.status().as_u16());
-    assert_eq!(
-        r#"Basic realm="publish""#,
-        response.headers()["WWW-Authenticate"]
-    )
 }
 
 #[tokio::test]
@@ -183,28 +161,16 @@ async fn user_with_wrong_password_is_rejected() {
     // Arrange
     let app = spawn_app().await;
 
-    let username = app.test_user.username;
-    let password = uuid::Uuid::new_v4();
-
-    assert_ne!(password.to_string(), app.test_user.password);
-
     let response = reqwest::Client::new()
-        .post(format!("{}/newsletters", &app.address))
-        .basic_auth(username, Some(password))
-        .json(&serde_json::json!({
+        .post(format!("{}/admin/newsletters", &app.address))
+        .form(&serde_json::json!({
             "title": "Newsletter",
-            "content": {
-                "text": "Newsletter",
-                "html": "Newsletter",
-            }
+            "text": "Newsletter",
+            "html": "Newsletter",
         }))
         .send()
         .await
         .expect("Failed to execute the request");
 
     assert_eq!(401, response.status().as_u16());
-    assert_eq!(
-        r#"Basic realm="publish""#,
-        response.headers()["WWW-Authenticate"]
-    )
 }

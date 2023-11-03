@@ -3,7 +3,7 @@ use crate::configuration::{DatabaseSettings, Settings};
 use crate::email_client::EmailClient;
 use crate::routes::login;
 use crate::routes::{admin, home};
-use crate::routes::{confirm, health_check, publish_newsletter, subscribe};
+use crate::routes::{confirm, health_check, subscribe};
 use actix_session::storage::RedisSessionStore;
 use actix_session::SessionMiddleware;
 use actix_web::cookie::Key;
@@ -101,7 +101,6 @@ pub async fn run(
             .route("/health_check", web::get().to(health_check))
             .route("/subscription", web::post().to(subscribe))
             .route("/subscription/confirm", web::get().to(confirm))
-            .route("/newsletters", web::post().to(publish_newsletter))
             .service(home)
             .service(login::login_form)
             .service(login::login)
@@ -111,7 +110,9 @@ pub async fn run(
                     .service(admin::admin_dashboard)
                     .service(admin::change_password_form)
                     .service(admin::change_password)
-                    .service(admin::admin_logout),
+                    .service(admin::admin_logout)
+                    .service(admin::issue_page)
+                    .service(admin::newsletter_issue),
             )
             .app_data(Data::new(db_pool.clone()))
             .app_data(Data::new(email_client.clone()))

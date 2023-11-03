@@ -49,6 +49,7 @@ fn get_admin_html(username: String) -> String {
             <br />
             <p>Available actions:</p>
             <ol>
+                <li><a href="/admin/newsletters">Send newsletter issue</a></li>
                 <li><a href="/admin/password">Change password</a></li>
                 <li>
                     <form name="logoutForm" action="/admin/logout" method="post">
