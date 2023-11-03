@@ -13,6 +13,6 @@ database:
 
 email_client:
   base_url: "https://api.postmarkapp.com/email"
-  sender_email: "newsletter@kunalsin9h.com"
-  authorization_token: "6aae038d-3e9e-4a65-9231-183e125e5b8a"
+  sender_email: "newsletter@your-domain.com"
+  authorization_token: "-------------postmark-app-token-----------------"
   timeout_millisecond: 10000

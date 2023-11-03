@@ -119,7 +119,7 @@ pub async fn run(
             .app_data(Data::new(db_pool.clone()))
             .app_data(Data::new(email_client.clone()))
             .app_data(Data::new(base_url.clone()))
-            .app_data(Data::new(app_port.clone()))
+            .app_data(Data::new(app_port))
     })
     .listen(listener)?
     .run();

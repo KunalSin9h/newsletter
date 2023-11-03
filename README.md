@@ -7,14 +7,14 @@
 - [Rust](https://www.rust-lang.org/tools/install)
 - [Postmark Account](https://postmarkapp.com/) (for email client)
 - [PostgreSQL](https://www.postgresql.org/download/)
-- [Redis](https://redis.io/download) (or anther redis-api compatible cache, in my case [DragonFlyDB](https://www.dragonfly.com/))
+- [Redis](https://redis.io/download) (or anther redis-api compatible cache, in my case [DragonFlyDB](https://www.dragonflydb.io/))
 - [Docker](https://docs.docker.com/get-docker/)
 - [Docker Compose](https://docs.docker.com/compose/install/)
 - [Gnu Make](https://www.gnu.org/software/make/) (optional)
 
 ### Setup
 
-> ![IMPORTANT]
+> [!IMPORTANT]
 > If you want to run the project using docker, then see these instructions [here](./Docker-Setup.md)
 
 ```bash
