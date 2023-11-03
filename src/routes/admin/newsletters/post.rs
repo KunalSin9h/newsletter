@@ -61,7 +61,7 @@ pub async fn newsletter_issue(
     }
 
     FlashMessage::info("The newsletter issue has been published!").send();
-    Ok(see_other("/admin/newsletter"))
+    Ok(see_other("/admin/newsletters"))
 }
 
 #[tracing::instrument(name = "Get confirmed subscribers", skip(pool))]
