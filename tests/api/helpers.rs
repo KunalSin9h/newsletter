@@ -191,6 +191,18 @@ impl TestUser {
         .await
         .expect("Failed to create a new test user");
     }
+
+    pub async fn login(&self, app: &TestApp) {
+        let body = serde_json::json!({
+            "username": &self.username,
+            "password": &self.password,
+        });
+
+        let resp = app.post_login(&body).await;
+
+        assert_eq!(resp.status().as_u16(), 303);
+        assert_redirect_to(&resp, "/admin/dashboard");
+    }
 }
 
 pub async fn spawn_app() -> TestApp {

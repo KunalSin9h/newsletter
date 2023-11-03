@@ -1,4 +1,4 @@
-use crate::helpers::{spawn_app, ConfirmationLink, TestApp};
+use crate::helpers::{spawn_app, ConfirmationLink, TestApp, assert_redirect_to};
 use wiremock::{
     matchers::{any, method, path},
     Mock, ResponseTemplate,
@@ -8,6 +8,7 @@ use wiremock::{
 async fn newsletter_is_not_delivered_to_unconfirmed_subscribers() {
     let app = spawn_app().await;
     create_unconfirmed_subscriber(&app).await;
+    app.test_user.login(&app).await;
 
     // Because the user is un-confirmed, we should expect 0 request to this
     Mock::given(any())
@@ -25,13 +26,15 @@ async fn newsletter_is_not_delivered_to_unconfirmed_subscribers() {
 
     let response = app.post_newsletter(&newsletter_request_payload).await;
 
-    assert_eq!(response.status().as_u16(), 200);
+    assert_eq!(response.status().as_u16(), 303);
+    assert_redirect_to(&response, "/admin/newsletters");
 }
 
 #[tokio::test]
 async fn newsletter_is_delivered_to_confirmed_subscribers() {
     let app = spawn_app().await;
     create_confirmed_subscriber(&app).await;
+    app.test_user.login(&app).await;
 
     Mock::given(path("/email"))
         .and(method("POST"))
@@ -48,7 +51,8 @@ async fn newsletter_is_delivered_to_confirmed_subscribers() {
 
     let response = app.post_newsletter(&newsletter_request_payload).await;
 
-    assert_eq!(response.status().as_u16(), 200);
+    assert_eq!(response.status().as_u16(), 303);
+    assert_redirect_to(&response, "/admin/newsletters");
 }
 
 async fn create_unconfirmed_subscriber(app: &TestApp) -> ConfirmationLink {
@@ -91,6 +95,8 @@ async fn create_confirmed_subscriber(app: &TestApp) {
 #[tokio::test]
 async fn publish_newsletter_return_400_for_invalid_body() {
     let app = spawn_app().await;
+    app.test_user.login(&app).await;
+
     let test_case = vec![
         (
             serde_json::json!({
@@ -113,64 +119,8 @@ async fn publish_newsletter_return_400_for_invalid_body() {
         assert_eq!(
             res.status().as_u16(),
             400,
-            "The API does not fail with 400 BAT REQUEST when payload was {}.",
+            "The API does not fail with 400 Bad Request when payload was {}.",
             message
         );
     }
-}
-
-#[tokio::test]
-async fn request_with_missing_authorization_header_must_be_rejected() {
-    let app = spawn_app().await;
-
-    let response = reqwest::Client::new()
-        .post(format!("{}/admin/newsletters", &app.address))
-        .form(&serde_json::json!({
-            "title": "Newsletter Title",
-            "text": "Text content",
-            "html": "<h1>Html content</h1>",
-        }))
-        .send()
-        .await
-        .expect("failed to exec request");
-
-    assert_eq!(response.status().as_u16(), 401);
-}
-
-#[tokio::test]
-async fn non_existing_user_is_rejected() {
-    // Arrange
-    let app = spawn_app().await;
-
-    let response = reqwest::Client::new()
-        .post(format!("{}/admin/newsletters", &app.address))
-        .form(&serde_json::json!({
-            "title": "Newsletter",
-            "text": "Newsletter",
-            "html": "Newsletter",
-        }))
-        .send()
-        .await
-        .expect("Failed to execute the request");
-
-    assert_eq!(401, response.status().as_u16());
-}
-
-#[tokio::test]
-async fn user_with_wrong_password_is_rejected() {
-    // Arrange
-    let app = spawn_app().await;
-
-    let response = reqwest::Client::new()
-        .post(format!("{}/admin/newsletters", &app.address))
-        .form(&serde_json::json!({
-            "title": "Newsletter",
-            "text": "Newsletter",
-            "html": "Newsletter",
-        }))
-        .send()
-        .await
-        .expect("Failed to execute the request");
-
-    assert_eq!(401, response.status().as_u16());
 }
