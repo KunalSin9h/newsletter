@@ -12,7 +12,7 @@ database:
   require_ssl: false
 
 email_client:
-  base_url: "http://domain.com/"
-  sender_email: "test@email.com"
-  authorization_token: "token"
-  timeout_millisecond: 1000
+  base_url: "https://api.postmarkapp.com/email"
+  sender_email: "newsletter@kunalsin9h.com"
+  authorization_token: "6aae038d-3e9e-4a65-9231-183e125e5b8a"
+  timeout_millisecond: 10000

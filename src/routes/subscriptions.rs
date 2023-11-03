@@ -25,7 +25,7 @@ impl TryFrom<FormData> for NewSubscriber {
     }
 }
 
-// POST /subscribe
+// POST /subscription
 // Subscribe to email newsletter
 #[tracing::instrument(
     name = "Adding a new subscriber",
@@ -40,6 +40,7 @@ pub async fn subscribe(
     db_pool: web::Data<PgPool>,
     email_client: web::Data<EmailClient>,
     base_url: web::Data<String>,
+    app_port: web::Data<u16>,
 ) -> Result<HttpResponse, SubscribeError> {
     let new_subscriber = form.0.try_into()?;
 
@@ -61,6 +62,7 @@ pub async fn subscribe(
         &email_client,
         new_subscriber,
         &base_url,
+        &app_port,
         &subscription_token,
     )
     .await?;
@@ -141,12 +143,17 @@ pub async fn send_confirmation_email(
     email_client: &web::Data<EmailClient>,
     new_sub: NewSubscriber,
     base_url: &web::Data<String>,
+    app_port: &web::Data<u16>,
     token: &str,
 ) -> Result<(), reqwest::Error> {
+    let mut base_host_url = String::new();
+    if base_url.contains("127.0.0.1") || base_url.contains("localhost") {
+        base_host_url = format!("{}:{}", base_url.as_str(), app_port.as_ref());
+    };
+
     let confirmation_link = format!(
         "{}/subscription/confirm?subscription_token={}",
-        base_url.as_str(),
-        token
+        base_host_url, token
     );
     let text_body = &format!(
         "Welcome to my Newsletter!\nVisit {} to confirm your subscription",

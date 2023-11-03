@@ -57,6 +57,7 @@ impl Application {
             connection_pool,
             email_client,
             configuration.application.base_url,
+            configuration.application.port,
             HmacSecret(configuration.application.hmac_secret),
             configuration.redis_uri,
         )
@@ -79,6 +80,7 @@ pub async fn run(
     db_pool: PgPool,
     email_client: EmailClient,
     base_url: String,
+    app_port: u16,
     hmac_secret: HmacSecret,
     redis_uri: Secret<String>,
 ) -> Result<Server, anyhow::Error> {
@@ -117,6 +119,7 @@ pub async fn run(
             .app_data(Data::new(db_pool.clone()))
             .app_data(Data::new(email_client.clone()))
             .app_data(Data::new(base_url.clone()))
+            .app_data(Data::new(app_port.clone()))
     })
     .listen(listener)?
     .run();
