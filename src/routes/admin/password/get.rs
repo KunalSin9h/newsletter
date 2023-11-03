@@ -1,7 +1,7 @@
 use actix_web::{get, http::header::ContentType, HttpResponse};
 use actix_web_flash_messages::{IncomingFlashMessages, Level};
 
-#[get("/admin/password")]
+#[get("/password")]
 pub async fn change_password_form(
     flash_message: IncomingFlashMessages,
 ) -> Result<HttpResponse, actix_web::Error> {

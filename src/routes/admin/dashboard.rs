@@ -5,7 +5,7 @@ use sqlx::PgPool;
 use crate::authentication::UserID;
 use crate::utils::e500;
 
-#[get("/admin/dashboard")]
+#[get("/dashboard")]
 pub async fn admin_dashboard(
     pool: web::Data<PgPool>,
     user_id: web::ReqData<UserID>,

@@ -16,7 +16,7 @@ pub struct FormData {
     new_password_check: Secret<String>,
 }
 
-#[post("/admin/password")]
+#[post("/password")]
 pub async fn change_password(
     form: web::Form<FormData>,
     pool: web::Data<PgPool>,
