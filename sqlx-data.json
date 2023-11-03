@@ -98,6 +98,19 @@
     },
     "query": "\n    INSERT INTO subscriptions (id, email, name, subscription_at, status)\n    VALUES ($1, $2, $3, $4, 'pending_confirmation')\n    "
   },
+  "d137d8bacafecedb59774bcd0ad91816962864dc3efe4f0ff32e6f3855c445d8": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n        UPDATE users \n        SET password_hash = $1\n        WHERE user_id = $2\n    "
+  },
   "ef3b6e36173c6cfee24dc38d2ff17d56bd1a3a27558917b8a5e1dd616c3e2e1c": {
     "describe": {
       "columns": [
