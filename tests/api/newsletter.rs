@@ -26,7 +26,6 @@ async fn newsletter_is_not_delivered_to_unconfirmed_subscribers() {
 
     let response = app.post_newsletter(&newsletter_request_payload).await;
 
-    assert_eq!(response.status().as_u16(), 303);
     assert_redirect_to(&response, "/admin/newsletters");
 }
 
@@ -51,7 +50,6 @@ async fn newsletter_is_delivered_to_confirmed_subscribers() {
 
     let response = app.post_newsletter(&newsletter_request_payload).await;
 
-    assert_eq!(response.status().as_u16(), 303);
     assert_redirect_to(&response, "/admin/newsletters");
 }
 
@@ -123,4 +121,39 @@ async fn publish_newsletter_return_400_for_invalid_body() {
             message
         );
     }
+}
+
+// idempotent == retry-safe
+// newsletter creating api = POST /admin/newsletters
+#[tokio::test]
+async fn newsletter_creation_is_idempotent() {
+    let app = spawn_app().await;
+    create_confirmed_subscriber(&app).await;
+    app.test_user.login(&app).await;
+
+    // mocking Postmark API for testing
+    Mock::given(path("/email")) // if request comes in /email
+        .and(method("POST"))   // with method POST
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1) // only expect one request
+                   // when we retry, then this ensures
+                   // that the api is idempotent
+        .mount(&app.email_server) // instance of MockServer
+        .await;
+
+    let newsletter_request_payload = serde_json::json!({
+        "title": "Newsletter title",
+        "text": "text content",
+        "html": "<h1>html content</h1>",
+        "idempotency_key": uuid::Uuid::new_v4().to_string()
+    });
+
+    let response = app.post_newsletter(&newsletter_request_payload).await;
+    assert_redirect_to(&response, "/admin/newsletters");
+
+    // retrying, i.e submitting the same newsletter **again**
+    let response = app.post_newsletter(&newsletter_request_payload).await;
+    assert_redirect_to(&response, "/admin/newsletters");   
+
+    // mock verifies that the email-client is hit only once
 }
