@@ -6,6 +6,7 @@ use rand::{thread_rng, Rng};
 use sqlx::types::Uuid;
 use sqlx::PgPool;
 
+use crate::utils::see_other;
 use crate::{domain::NewSubscriber, email_client::EmailClient};
 
 use super::SubscribeError;
@@ -76,7 +77,8 @@ pub async fn subscribe(
     )
     .await?;
 
-    Ok(HttpResponse::Ok().finish())
+    // Redirect to GET /subscription for showing the html page
+    Ok(see_other("/subscription"))
 }
 
 #[tracing::instrument(

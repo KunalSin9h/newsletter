@@ -1,9 +1,9 @@
-use crate::helpers::spawn_app;
+use crate::helpers::{assert_redirect_to, spawn_app};
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, ResponseTemplate};
 
 #[tokio::test]
-async fn subscribe_return_a_200_for_valid_form_data() {
+async fn subscribe_redirect_for_valid_form_data() {
     let test_app = spawn_app().await;
 
     let body = "name=Kunal%20Singh&email=kunal%40gmail.com";
@@ -17,7 +17,8 @@ async fn subscribe_return_a_200_for_valid_form_data() {
 
     let response = test_app.post_subscriptions(body.to_string()).await;
 
-    assert_eq!(200, response.status().as_u16());
+    assert_eq!(303, response.status().as_u16());
+    assert_redirect_to(&response, "/subscription");
 }
 
 #[tokio::test]
@@ -35,7 +36,8 @@ async fn subscribe_persist_the_new_subscriber() {
 
     let response = test_app.post_subscriptions(body.to_string()).await;
 
-    assert_eq!(200, response.status().as_u16());
+    assert_eq!(303, response.status().as_u16());
+    assert_redirect_to(&response, "/subscription");
 
     let saved = sqlx::query!("SELECT email, name, status from subscriptions",)
         .fetch_one(&test_app.db_pool)
@@ -70,7 +72,7 @@ async fn subscribe_return_a_400_when_data_is_missing() {
 }
 
 #[tokio::test]
-async fn subscribe_return_a_200_when_fields_are_present_but_empty() {
+async fn subscribe_return_a_400_when_fields_are_present_but_empty() {
     let test_app = spawn_app().await;
 
     let test_cases = vec![
