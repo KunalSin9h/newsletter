@@ -46,7 +46,7 @@ The application will be served on the specified port on the `./configuration/bas
 
 # API Docs
 
-> ![IMPORTANT]
+> [!NOTE]
 > The default username is `admin` and the default password is `admin`
 > You must change the password from the admin dashboard
 
