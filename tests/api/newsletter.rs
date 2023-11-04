@@ -22,6 +22,7 @@ async fn newsletter_is_not_delivered_to_unconfirmed_subscribers() {
         "title": "Title of Newsletter",
         "text": "Newsletter plain body",
         "html": "<h1>Newsletter html body</h1>",
+        "idempotency_key": uuid::Uuid::new_v4().to_string(),
     });
 
     let response = app.post_newsletter(&newsletter_request_payload).await;
@@ -46,6 +47,7 @@ async fn newsletter_is_delivered_to_confirmed_subscribers() {
         "title": "Title of Newsletter",
         "text": "Newsletter plain body",
         "html": "<h1>Newsletter html body</h1>",
+        "idempotency_key": uuid::Uuid::new_v4().to_string(),
     });
 
     let response = app.post_newsletter(&newsletter_request_payload).await;
@@ -133,11 +135,11 @@ async fn newsletter_creation_is_idempotent() {
 
     // mocking Postmark API for testing
     Mock::given(path("/email")) // if request comes in /email
-        .and(method("POST"))   // with method POST
+        .and(method("POST")) // with method POST
         .respond_with(ResponseTemplate::new(200))
         .expect(1) // only expect one request
-                   // when we retry, then this ensures
-                   // that the api is idempotent
+        // when we retry, then this ensures
+        // that the api is idempotent
         .mount(&app.email_server) // instance of MockServer
         .await;
 
@@ -153,7 +155,7 @@ async fn newsletter_creation_is_idempotent() {
 
     // retrying, i.e submitting the same newsletter **again**
     let response = app.post_newsletter(&newsletter_request_payload).await;
-    assert_redirect_to(&response, "/admin/newsletters");   
+    assert_redirect_to(&response, "/admin/newsletters");
 
     // mock verifies that the email-client is hit only once
 }

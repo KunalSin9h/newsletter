@@ -22,6 +22,8 @@ pub async fn issue_page(
 }
 
 fn get_issue_page_html(message: String) -> String {
+    let idempotency_key = uuid::Uuid::new_v4().to_string();
+
     format!(
         r#"
         <html>
@@ -64,6 +66,13 @@ fn get_issue_page_html(message: String) -> String {
                             name="html"
                         >
                     </label>
+
+                    <input 
+                        hidden
+                        type="text"
+                        name="idempotency_key"
+                        value="{idempotency_key}"
+                    >
 
                     <button type="submit">Send</button>
                 </form>
