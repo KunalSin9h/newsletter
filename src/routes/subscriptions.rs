@@ -146,10 +146,11 @@ pub async fn send_confirmation_email(
     app_port: &web::Data<u16>,
     token: &str,
 ) -> Result<(), reqwest::Error> {
-    let mut base_host_url = String::new();
-    if base_url.contains("127.0.0.1") || base_url.contains("localhost") {
-        base_host_url = format!("{}:{}", base_url.as_str(), app_port.as_ref());
-    };
+    let base_host_url = if base_url.contains("127.0.0.1") || base_url.contains("localhost") {
+        format!("{}:{}", base_url.as_str(), app_port.as_ref())
+    } else {
+        base_url.to_string()
+    }; 
 
     let confirmation_link = format!(
         "{}/subscription/confirm?subscription_token={}",
