@@ -150,7 +150,7 @@ pub async fn send_confirmation_email(
         format!("{}:{}", base_url.as_str(), app_port.as_ref())
     } else {
         base_url.to_string()
-    }; 
+    };
 
     let confirmation_link = format!(
         "{}/subscription/confirm?subscription_token={}",
