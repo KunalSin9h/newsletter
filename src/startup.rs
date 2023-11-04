@@ -1,9 +1,9 @@
 use crate::authentication::reject_anonymous_user;
 use crate::configuration::{DatabaseSettings, Settings};
 use crate::email_client::EmailClient;
-use crate::routes::login;
 use crate::routes::{admin, home};
 use crate::routes::{confirm, health_check, subscribe};
+use crate::routes::{login, subscribe_page};
 use actix_session::storage::RedisSessionStore;
 use actix_session::SessionMiddleware;
 use actix_web::cookie::Key;
@@ -100,9 +100,10 @@ pub async fn run(
                 redis_store.clone(),
                 secret_key.clone(),
             ))
-            .route("/health_check", web::get().to(health_check))
-            .route("/subscription", web::post().to(subscribe))
-            .route("/subscription/confirm", web::get().to(confirm))
+            .service(health_check)
+            .service(subscribe)
+            .service(subscribe_page)
+            .service(confirm)
             .service(home)
             .service(login::login_form)
             .service(login::login)

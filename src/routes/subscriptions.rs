@@ -1,4 +1,5 @@
-use actix_web::{web, HttpResponse};
+use actix_web::http::header::ContentType;
+use actix_web::{get, post, web, HttpResponse};
 use chrono::Utc;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
@@ -25,6 +26,13 @@ impl TryFrom<FormData> for NewSubscriber {
     }
 }
 
+// GET /health_check
+// Health Check is an basic endpoint for check the status of the server
+#[get("/health_check")]
+pub async fn health_check() -> HttpResponse {
+    HttpResponse::Ok().finish()
+}
+
 // POST /subscription
 // Subscribe to email newsletter
 #[tracing::instrument(
@@ -35,6 +43,7 @@ impl TryFrom<FormData> for NewSubscriber {
         subscriber_name= %form.name
     )
 )]
+#[post("/subscription")]
 pub async fn subscribe(
     form: web::Form<FormData>,
     db_pool: web::Data<PgPool>,
@@ -208,4 +217,13 @@ fn generate_subscription_token() -> String {
         .map(char::from)
         .take(25)
         .collect()
+}
+
+#[get("/subscription")]
+pub async fn subscribe_page() -> HttpResponse {
+    let html = include_str!("subscribe_page.html");
+
+    HttpResponse::Ok()
+        .content_type(ContentType::html())
+        .body(html)
 }

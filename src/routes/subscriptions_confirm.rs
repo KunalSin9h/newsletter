@@ -1,4 +1,4 @@
-use actix_web::{web, HttpResponse};
+use actix_web::{get, http::header::ContentType, web, HttpResponse};
 use sqlx::PgPool;
 
 #[derive(serde::Deserialize)]
@@ -7,6 +7,7 @@ pub struct Parameters {
 }
 
 #[tracing::instrument(name = "Confirming a pending subscriber", skip(params))]
+#[get("/subscription/confirm")]
 pub async fn confirm(params: web::Query<Parameters>, db_pool: web::Data<PgPool>) -> HttpResponse {
     let token = params.0.subscription_token;
 
@@ -21,7 +22,10 @@ pub async fn confirm(params: web::Query<Parameters>, db_pool: web::Data<PgPool>)
             if confirm_subscriber(&db_pool, id).await.is_err() {
                 return HttpResponse::InternalServerError().finish();
             }
-            HttpResponse::Ok().finish()
+            let html = include_str!("subscribe_confirm.html");
+            HttpResponse::Ok()
+                .content_type(ContentType::html())
+                .body(html)
         }
     }
 }
