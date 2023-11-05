@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use crate::helpers::{assert_redirect_to, spawn_app, ConfirmationLink, TestApp};
 use wiremock::{
     matchers::{any, method, path},
@@ -158,4 +160,36 @@ async fn newsletter_creation_is_idempotent() {
     assert_redirect_to(&response, "/admin/newsletters");
 
     // mock verifies that the email-client is hit only once
+}
+
+#[tokio::test]
+pub async fn concurrent_form_submission_are_handle_gracefully() {
+    let app = spawn_app().await;
+    create_confirmed_subscriber(&app).await;
+    app.test_user.login(&app).await;
+
+    // mocking Postmark api
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        // setting delay of 2 second for first request to mack the time taken by first request
+        // so that we can test the concurrent request being queued
+        .respond_with(ResponseTemplate::new(200).set_delay(Duration::from_secs(2)))
+        .expect(1)
+        .mount(&app.email_server)
+        .await;
+
+    let newsletter_request_payload = serde_json::json!({
+        "title": "Newsletter title",
+        "text": "text content",
+        "html": "<h1>html content</h1>",
+        "idempotency_key": uuid::Uuid::new_v4().to_string()
+    });
+
+    let res_1 = app.post_newsletter(&newsletter_request_payload);
+    let res_2 = app.post_newsletter(&newsletter_request_payload);
+
+    let (res_1, res_2) = tokio::join!(res_1, res_2);
+
+    assert_eq!(res_1.status(), res_2.status());
+    assert_eq!(res_1.text().await.unwrap(), res_2.text().await.unwrap());
 }
