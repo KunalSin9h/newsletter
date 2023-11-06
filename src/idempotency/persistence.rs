@@ -49,7 +49,7 @@ pub async fn try_processing(
     if n_inserted_rows > 0 {
         Ok(NextAction::StartProcessing(transaction))
     } else {
-        let saved_response = get_saved_response(&pool, &idempotency_key, user_id)
+        let saved_response = get_saved_response(pool, idempotency_key, user_id)
             .await?
             .ok_or_else(|| anyhow::anyhow!("We expected a saved response, we didn't find it"))?;
 
