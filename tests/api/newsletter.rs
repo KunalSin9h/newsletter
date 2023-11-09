@@ -1,9 +1,13 @@
 use std::time::Duration;
 
 use crate::helpers::{assert_redirect_to, spawn_app, ConfirmationLink, TestApp};
+use fake::{
+    faker::{internet::en::SafeEmail, name::en::Name},
+    Fake,
+};
 use wiremock::{
     matchers::{any, method, path},
-    Mock, ResponseTemplate,
+    Mock, MockBuilder, ResponseTemplate,
 };
 
 #[tokio::test]
@@ -58,7 +62,15 @@ async fn newsletter_is_delivered_to_confirmed_subscribers() {
 }
 
 async fn create_unconfirmed_subscriber(app: &TestApp) -> ConfirmationLink {
-    let body = "name=test%20test&email=test%40gmail.com";
+    // when working with multiple subscribers
+    // use random credentials
+    let name: String = Name().fake();
+    let email: String = SafeEmail().fake();
+    let body = serde_urlencoded::to_string(&serde_json::json!({
+        "name": name,
+        "email": email
+    }))
+    .unwrap();
 
     let _mock_guard = Mock::given(path("/email"))
         .and(method("POST"))
@@ -163,7 +175,7 @@ async fn newsletter_creation_is_idempotent() {
 }
 
 #[tokio::test]
-pub async fn concurrent_form_submission_are_handle_gracefully() {
+async fn concurrent_form_submission_are_handle_gracefully() {
     let app = spawn_app().await;
     create_confirmed_subscriber(&app).await;
     app.test_user.login(&app).await;
@@ -192,4 +204,54 @@ pub async fn concurrent_form_submission_are_handle_gracefully() {
 
     assert_eq!(res_1.status(), res_2.status());
     assert_eq!(res_1.text().await.unwrap(), res_2.text().await.unwrap());
+}
+
+// short-hand for building mock server for email deliveries
+fn when_sending_email() -> MockBuilder {
+    Mock::given(path("/email")).and(method("POST"))
+}
+
+#[tokio::test]
+async fn transient_errors_do_not_cause_duplicate_deliveries_on_retry() {
+    let app = spawn_app().await;
+    let newsletter_request_payload = serde_json::json!({
+        "title": "Newsletter title",
+        "text": "text content",
+        "html": "<h1>html content</h1>",
+        "idempotency_key": uuid::Uuid::new_v4().to_string()
+    });
+
+    create_confirmed_subscriber(&app).await;
+    create_confirmed_subscriber(&app).await;
+    app.test_user.login(&app).await;
+
+    // mocking postmark api
+    when_sending_email()
+        .respond_with(ResponseTemplate::new(200))
+        .up_to_n_times(1)
+        .expect(1)
+        .mount(&app.email_server)
+        .await;
+
+    when_sending_email()
+        .respond_with(ResponseTemplate::new(500))
+        .up_to_n_times(1)
+        .expect(1)
+        .mount(&app.email_server)
+        .await;
+
+    let response = app.post_newsletter(&newsletter_request_payload).await;
+    assert_eq!(response.status().as_u16(), 500);
+
+    // retry
+    // expecting only one hit to postmark api
+    // one subscriber already got the email
+    when_sending_email()
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&app.email_server)
+        .await;
+
+    let response = app.post_newsletter(&newsletter_request_payload).await;
+    assert_eq!(response.status().as_u16(), 303);
 }
