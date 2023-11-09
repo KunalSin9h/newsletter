@@ -52,3 +52,9 @@ features = [
   "migrate",
   "offline"
 ]
+
+# Optimization for compile time
+[profile.dev]
+opt-level = 1
+[profile.dev.package."*"]
+opt-level = 3

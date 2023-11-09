@@ -28,7 +28,7 @@ pub struct HmacSecret(pub Secret<String>);
 
 impl Application {
     pub async fn build(configuration: Settings) -> Result<Self, anyhow::Error> {
-        let connection_pool = get_configuration_pool(&configuration.database);
+        let connection_pool = get_connection_pool(&configuration.database);
 
         let sender = configuration
             .email_client
@@ -128,7 +128,7 @@ pub async fn run(
     Ok(server)
 }
 
-pub fn get_configuration_pool(db: &DatabaseSettings) -> Pool<Postgres> {
+pub fn get_connection_pool(db: &DatabaseSettings) -> Pool<Postgres> {
     PgPoolOptions::new()
         .connect_timeout(std::time::Duration::from_secs(2))
         .connect_lazy_with(db.with_db())
