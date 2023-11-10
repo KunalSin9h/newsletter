@@ -10,16 +10,20 @@ async fn main() -> anyhow::Result<()> {
 
     let configuration = get_configuration().expect("Failed to read configuration.");
 
-    let app = Application::build(configuration.clone())
-        .await?
-        .run_until_stopped();
-    let worker = run_worker_until_stopped(configuration.clone());
+    let app = Application::build(configuration.clone()).await?;
+    let app_run = tokio::spawn(app.run_until_stopped());
+    let worker_run = tokio::spawn(run_worker_until_stopped(configuration.clone()));
 
     println!("Started server at post {}", configuration.application.port);
 
     tokio::select! {
-        _ = app => {},
-        _ = worker => {},
+        // TODO consume error
+        _ = app_run => {
+            println!("Application (API) exited");
+        },
+        _ = worker_run => {
+            println!("Worker exited");
+        },
     };
 
     Ok(())

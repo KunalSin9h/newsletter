@@ -33,8 +33,7 @@ async fn worker_loop(pool: &PgPool, email_client: &EmailClient) -> Result<(), an
                 tokio::time::sleep(std::time::Duration::from_secs(10)).await;
             }
             Ok(ExecutionOutput::TaskCompleted) => {}
-            // FUTURE TODO
-            // exponential backoff with jitter
+            // TODO: exponential backoff with jitter
             Err(_) => {
                 tokio::time::sleep(std::time::Duration::from_secs(1)).await;
             }
@@ -42,7 +41,7 @@ async fn worker_loop(pool: &PgPool, email_client: &EmailClient) -> Result<(), an
     }
 }
 
-enum ExecutionOutput {
+pub enum ExecutionOutput {
     TaskCompleted,
     EmptyQueue,
 }
@@ -55,7 +54,7 @@ enum ExecutionOutput {
     ),
     err
 )]
-async fn try_execute_task(
+pub async fn try_execute_task(
     pool: &PgPool,
     email_client: &EmailClient,
 ) -> Result<ExecutionOutput, anyhow::Error> {
@@ -77,6 +76,9 @@ async fn try_execute_task(
 
     match SubscriberEmail::parse(subscriber_email.clone()) {
         Ok(email) => {
+            // TODO: Retry
+            // We are only trying sending email only once
+            // so introduce retry
             if let Err(e) = email_client
                 .send_email(
                     &email,

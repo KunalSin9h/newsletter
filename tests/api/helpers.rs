@@ -1,6 +1,8 @@
 use argon2::password_hash::SaltString;
 use argon2::{Algorithm, Argon2, Params, PasswordHasher, Version};
 use newsletter::configuration::{get_configuration, DatabaseSettings};
+use newsletter::email_client::EmailClient;
+use newsletter::issue_delivery_workers::{try_execute_task, ExecutionOutput};
 use newsletter::startup::Application;
 use newsletter::telemetry::{get_subscriber, init_subscriber};
 use sqlx::types::Uuid;
@@ -18,6 +20,7 @@ pub struct TestApp {
     pub email_server: MockServer,
     pub test_user: TestUser,
     pub api_client: reqwest::Client,
+    pub email_client: EmailClient,
 }
 
 pub struct TestUser {
@@ -157,6 +160,17 @@ impl TestApp {
             text_link,
         }
     }
+
+    pub async fn dispatch_all_emails(&self) {
+        loop {
+            if let ExecutionOutput::EmptyQueue = try_execute_task(&self.db_pool, &self.email_client)
+                .await
+                .unwrap()
+            {
+                break;
+            }
+        }
+    }
 }
 
 impl TestUser {
@@ -242,6 +256,8 @@ pub async fn spawn_app() -> TestApp {
         .build()
         .unwrap();
 
+    let email_client = configuration.email_client.client();
+
     TestApp {
         address,
         port,
@@ -249,6 +265,7 @@ pub async fn spawn_app() -> TestApp {
         email_server,
         test_user,
         api_client,
+        email_client,
     }
 }
 

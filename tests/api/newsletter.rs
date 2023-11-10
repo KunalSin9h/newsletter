@@ -34,6 +34,8 @@ async fn newsletter_is_not_delivered_to_unconfirmed_subscribers() {
     let response = app.post_newsletter(&newsletter_request_payload).await;
 
     assert_redirect_to(&response, "/admin/newsletters");
+
+    app.dispatch_all_emails().await;
 }
 
 #[tokio::test]
@@ -59,6 +61,8 @@ async fn newsletter_is_delivered_to_confirmed_subscribers() {
     let response = app.post_newsletter(&newsletter_request_payload).await;
 
     assert_redirect_to(&response, "/admin/newsletters");
+    // no email send
+    app.dispatch_all_emails().await;
 }
 
 async fn create_unconfirmed_subscriber(app: &TestApp) -> ConfirmationLink {
@@ -147,7 +151,7 @@ async fn newsletter_creation_is_idempotent() {
     create_confirmed_subscriber(&app).await;
     app.test_user.login(&app).await;
 
-    // mocking Postmark API for testing
+    // // mocking Postmark API for testing
     Mock::given(path("/email")) // if request comes in /email
         .and(method("POST")) // with method POST
         .respond_with(ResponseTemplate::new(200))
@@ -172,6 +176,7 @@ async fn newsletter_creation_is_idempotent() {
     assert_redirect_to(&response, "/admin/newsletters");
 
     // mock verifies that the email-client is hit only once
+    app.dispatch_all_emails().await;
 }
 
 #[tokio::test]
@@ -180,7 +185,7 @@ async fn concurrent_form_submission_are_handle_gracefully() {
     create_confirmed_subscriber(&app).await;
     app.test_user.login(&app).await;
 
-    // mocking Postmark api
+    // // mocking Postmark api
     Mock::given(path("/email"))
         .and(method("POST"))
         // setting delay of 2 second for first request to mack the time taken by first request
@@ -204,6 +209,8 @@ async fn concurrent_form_submission_are_handle_gracefully() {
 
     assert_eq!(res_1.status(), res_2.status());
     assert_eq!(res_1.text().await.unwrap(), res_2.text().await.unwrap());
+
+    app.dispatch_all_emails().await;
 }
 
 // short-hand for building mock server for email deliveries
@@ -241,17 +248,19 @@ async fn transient_errors_do_not_cause_duplicate_deliveries_on_retry() {
         .await;
 
     let response = app.post_newsletter(&newsletter_request_payload).await;
-    assert_eq!(response.status().as_u16(), 500);
+    assert_eq!(response.status().as_u16(), 303);
 
-    // retry
+    // // retry
     // expecting only one hit to postmark api
     // one subscriber already got the email
     when_sending_email()
         .respond_with(ResponseTemplate::new(200))
-        .expect(1)
+        .expect(0)
         .mount(&app.email_server)
         .await;
 
     let response = app.post_newsletter(&newsletter_request_payload).await;
     assert_eq!(response.status().as_u16(), 303);
+
+    app.dispatch_all_emails().await;
 }
