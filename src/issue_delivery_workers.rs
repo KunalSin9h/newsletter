@@ -7,19 +7,7 @@ use tracing::{field::display, Span};
 
 pub async fn run_worker_until_stopped(configuration: Settings) {
     let pool = get_connection_pool(&configuration.database);
-    let sender_email = configuration
-        .email_client
-        .sender()
-        .expect("Invalid sender email address");
-
-    let timeout = configuration.email_client.timeout();
-    let email_client = EmailClient::new(
-        configuration.email_client.base_url,
-        sender_email,
-        configuration.email_client.authorization_token,
-        timeout,
-    )
-    .expect("failed to get email client");
+    let email_client = configuration.email_client.client();
 
     worker_loop(&pool, &email_client)
         .await
