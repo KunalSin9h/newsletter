@@ -16,4 +16,4 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - ~/secrets/production.yaml:/newsletter/configuration/production.yaml
+      - ~/secrets/production.yaml:/newsletter/configuration/production.yml
