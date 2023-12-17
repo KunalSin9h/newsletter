@@ -2,6 +2,20 @@
 
 #### Self hosted Email Newsletter written in Rust, only for adding _email subscription_ page to your blog - nothing more, nothing less
 
+<div align="center">
+  <h3>Powered by</h3>
+  <div style="display: flex; justify-content: center;">
+  <a href="https://neon.tech/">
+  <img width="200px" src="https://i.imgur.com/ZO6E4tQ.png" alt="NeonDB Logo">
+  </a>
+  &nbsp;
+  &nbsp;
+  <a href="https://github.com/meltred/meltcd">
+  <img width="200px" src="https://i.imgur.com/S3kHtNI.png" alt="MeltCD Logo"> 
+  </a>
+  </div>
+</div> 
+
 ### Requirements
 
 - [Rust](https://www.rust-lang.org/tools/install)
