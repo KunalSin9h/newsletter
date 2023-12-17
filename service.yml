@@ -2,7 +2,7 @@ version: "3"
 
 services:
   redis:
-    image: docker.dragonflydb.io/dragonflydb/dragonfly
+    image: redis:latest
     deploy:
       mode: global
     ports:
