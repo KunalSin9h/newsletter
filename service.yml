@@ -1,0 +1,19 @@
+version: "3"
+
+services:
+  redis:
+    image: redis:latest
+    deploy:
+      mode: global
+    ports:
+      - "6379:6379"
+
+  newsletter:
+    image: ghcr.io/kunalsin9h/newsletter:latest
+    deploy:
+      mode: replicated
+      replicas: 1
+    ports:
+      - "5000:5000"
+    volumes:
+      - ~/secrets/production.yaml:/newsletter/configuration/production.yaml
