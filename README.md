@@ -68,7 +68,7 @@ The application will be served on the specified port on the `./configuration/bas
 > The default username is `admin` and the default password is `admin`
 > You must change the password from the admin dashboard
 
-You hae to update the `email_client` section in the `./configuration/local.yaml` in order to
+You have to update the `email_client` section in the `./configuration/local.yaml` in order to
 use the email client
 
 1. Add a new subscriber
