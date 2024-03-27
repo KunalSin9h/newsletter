@@ -16,6 +16,10 @@
   </div>
 </div> 
 
+### Demo
+
+![image](https://github.com/KunalSin9h/newsletter/assets/82411321/b4645e97-2f84-4769-a300-630b6e0f037a)
+
 ### Requirements
 
 - [Rust](https://www.rust-lang.org/tools/install)
