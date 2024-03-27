@@ -76,8 +76,7 @@ Then the subscriber will receive a confirmation email, which will contain a link
 2.  ... TODO...
 
 # Story
-
-![Book cover image](https://tiddi.kunalsin9h.com/AEHv_hb)
+![image](https://github.com/KunalSin9h/newsletter/assets/82411321/f982d3d3-3b04-455a-8491-4c6f76568e80)
 
 The project was build while reading above book, **_From Zero to Production in Rust_**.
 
