@@ -18,7 +18,10 @@
 
 ### Demo
 
-![image](https://github.com/KunalSin9h/newsletter/assets/82411321/b4645e97-2f84-4769-a300-630b6e0f037a)
+> It is being used in my [blog](https://kunalsin9h.com/blog) page
+
+![image](https://github.com/KunalSin9h/newsletter/assets/82411321/ac151b2c-9baf-4f6d-a667-c3fd24796c15)
+
 
 ### Requirements
 
