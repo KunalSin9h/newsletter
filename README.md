@@ -48,7 +48,7 @@ cd newsletter
 # install required dependencies
 
 # install sqlx cli
-cargo install sqlx-cli --no-default-features
+cargo install sqlx-cli
 
 # install livejq cli
 cargo install livejq
