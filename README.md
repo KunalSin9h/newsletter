@@ -11,10 +11,10 @@
   &nbsp;
   &nbsp;
   <a href="https://github.com/meltred/meltcd">
-  <img width="200px" src="https://i.imgur.com/S3kHtNI.png" alt="MeltCD Logo"> 
+  <img width="200px" src="https://i.imgur.com/S3kHtNI.png" alt="MeltCD Logo">
   </a>
   </div>
-</div> 
+</div>
 
 ### Demo
 
@@ -48,7 +48,7 @@ cd newsletter
 # install required dependencies
 
 # install sqlx cli
-cargo install sqlx-cli --no-default-features --features postgres
+cargo install sqlx-cli --no-default-features
 
 # install livejq cli
 cargo install livejq
