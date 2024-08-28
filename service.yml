@@ -15,7 +15,5 @@ services:
       replicas: 1
     ports:
       - "5000:5000"
-    environment:
-      - APP_ENVIRONMENT=production
     volumes:
       - ~/secrets/production.yaml:/newsletter/configuration/production.yaml
