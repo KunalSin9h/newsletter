@@ -10,6 +10,7 @@ services:
 
   newsletter:
     image: ghcr.io/kunalsin9h/newsletter:latest
+    restart: no
     depends_on:
       - redis
     deploy:
